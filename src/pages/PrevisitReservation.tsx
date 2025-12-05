@@ -19,6 +19,9 @@ import {
 } from '@/src/hooks/usePrevisit';
 import type { PrevisitReservation, PrevisitReservationRequest } from '@/src/types/previsit.types';
 
+// 현재 프로젝트 ID (추후 프로젝트 선택 기능 구현 시 동적으로 변경)
+const PROJECT_ID = 1;
+
 export default function PrevisitReservationPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -39,14 +42,14 @@ export default function PrevisitReservationPage() {
   }>({ open: false, message: '', severity: 'info' });
 
   // API 조회
-  const { data: previsitsData } = usePrevisits({ project_id: 1 });
+  const { data: previsitsData } = usePrevisits(PROJECT_ID);
   const previsits = useMemo(() => previsitsData?.list || [], [previsitsData]);
 
   const {
     data: reservationsData,
     isLoading,
     error,
-  } = usePrevisitReservations({
+  } = usePrevisitReservations(PROJECT_ID, {
     previsit_id: filters.previsit_id,
     searchKeyword: filters.searchKeyword,
     offset: page * rowsPerPage,
@@ -63,7 +66,7 @@ export default function PrevisitReservationPage() {
   const handleSubmit = useCallback(
     async (data: PrevisitReservationRequest) => {
       try {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync({ projectId: PROJECT_ID, data });
         setSnackbar({ open: true, message: '예약이 등록되었습니다.', severity: 'success' });
       } catch (err) {
         console.error('등록 실패:', err);
@@ -79,7 +82,7 @@ export default function PrevisitReservationPage() {
       if (!confirm('이 예약을 삭제하시겠습니까?')) return;
 
       try {
-        await deleteMutation.mutateAsync(id);
+        await deleteMutation.mutateAsync({ projectId: PROJECT_ID, id });
         setSnackbar({ open: true, message: '삭제되었습니다.', severity: 'success' });
       } catch (err) {
         console.error('삭제 실패:', err);

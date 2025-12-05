@@ -1,6 +1,8 @@
 /**
  * 사전방문 관련 React Query hooks
- * API 문서 기준: 2025-12-04
+ * API 문서 기준: 2025-12-05
+ *
+ * 모든 hook에 projectId 파라미터 필요 (URL path 형식 변경)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,22 +47,27 @@ export const previsitKeys = {
   all: ['previsit'] as const,
 
   // 사전방문 행사
-  list: (params?: PrevisitListParams) => [...previsitKeys.all, 'list', params] as const,
-  detail: (id: number) => [...previsitKeys.all, 'detail', id] as const,
+  list: (projectId: number, params?: PrevisitListParams) =>
+    [...previsitKeys.all, 'list', projectId, params] as const,
+  detail: (projectId: number, id: number) =>
+    [...previsitKeys.all, 'detail', projectId, id] as const,
 
   // 사전방문 예약
-  reservations: (params?: PrevisitReservationListParams) =>
-    [...previsitKeys.all, 'reservations', params] as const,
-  reservation: (id: number) => [...previsitKeys.all, 'reservation', id] as const,
+  reservations: (projectId: number, params?: PrevisitReservationListParams) =>
+    [...previsitKeys.all, 'reservations', projectId, params] as const,
+  reservation: (projectId: number, id: number) =>
+    [...previsitKeys.all, 'reservation', projectId, id] as const,
   availableSlots: (projectId: number) =>
     [...previsitKeys.all, 'availableSlots', projectId] as const,
   dongs: (projectId: number) => [...previsitKeys.all, 'dongs', projectId] as const,
-  donghos: (dong: string) => [...previsitKeys.all, 'donghos', dong] as const,
+  donghos: (projectId: number, dong?: string) =>
+    [...previsitKeys.all, 'donghos', projectId, dong] as const,
 
   // 사전방문 등록 (실제 방문 기록)
-  dataList: (params?: PrevisitDataListParams) =>
-    [...previsitKeys.all, 'dataList', params] as const,
-  data: (id: number) => [...previsitKeys.all, 'data', id] as const,
+  dataList: (projectId: number, params?: PrevisitDataListParams) =>
+    [...previsitKeys.all, 'dataList', projectId, params] as const,
+  data: (projectId: number, id: number) =>
+    [...previsitKeys.all, 'data', projectId, id] as const,
 };
 
 // =============================================================================
@@ -70,10 +77,11 @@ export const previsitKeys = {
 /**
  * 사전방문 행사 목록 조회
  */
-export function usePrevisits(params?: PrevisitListParams) {
+export function usePrevisits(projectId: number, params?: PrevisitListParams) {
   return useQuery({
-    queryKey: previsitKeys.list(params),
-    queryFn: () => getPrevisits(params),
+    queryKey: previsitKeys.list(projectId, params),
+    queryFn: () => getPrevisits(projectId, params),
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }
@@ -81,11 +89,11 @@ export function usePrevisits(params?: PrevisitListParams) {
 /**
  * 사전방문 행사 상세 조회
  */
-export function usePrevisit(id: number) {
+export function usePrevisit(projectId: number, id: number) {
   return useQuery({
-    queryKey: previsitKeys.detail(id),
-    queryFn: () => getPrevisit(id),
-    enabled: !!id,
+    queryKey: previsitKeys.detail(projectId, id),
+    queryFn: () => getPrevisit(projectId, id),
+    enabled: !!projectId && !!id,
   });
 }
 
@@ -96,7 +104,8 @@ export function useCreatePrevisit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: PrevisitRequest) => createPrevisit(data),
+    mutationFn: ({ projectId, data }: { projectId: number; data: PrevisitRequest }) =>
+      createPrevisit(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -110,8 +119,15 @@ export function useUpdatePrevisit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<PrevisitRequest> }) =>
-      updatePrevisit(id, data),
+    mutationFn: ({
+      projectId,
+      id,
+      data,
+    }: {
+      projectId: number;
+      id: number;
+      data: Partial<PrevisitRequest>;
+    }) => updatePrevisit(projectId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -125,7 +141,8 @@ export function useDeletePrevisit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deletePrevisit(id),
+    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
+      deletePrevisit(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -139,10 +156,14 @@ export function useDeletePrevisit() {
 /**
  * 사전방문 예약 목록 조회
  */
-export function usePrevisitReservations(params?: PrevisitReservationListParams) {
+export function usePrevisitReservations(
+  projectId: number,
+  params?: PrevisitReservationListParams
+) {
   return useQuery({
-    queryKey: previsitKeys.reservations(params),
-    queryFn: () => getPrevisitReservations(params),
+    queryKey: previsitKeys.reservations(projectId, params),
+    queryFn: () => getPrevisitReservations(projectId, params),
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -150,11 +171,11 @@ export function usePrevisitReservations(params?: PrevisitReservationListParams) 
 /**
  * 사전방문 예약 상세 조회
  */
-export function usePrevisitReservation(id: number) {
+export function usePrevisitReservation(projectId: number, id: number) {
   return useQuery({
-    queryKey: previsitKeys.reservation(id),
-    queryFn: () => getPrevisitReservation(id),
-    enabled: !!id,
+    queryKey: previsitKeys.reservation(projectId, id),
+    queryFn: () => getPrevisitReservation(projectId, id),
+    enabled: !!projectId && !!id,
   });
 }
 
@@ -165,7 +186,13 @@ export function useCreatePrevisitReservation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: PrevisitReservationRequest) => createPrevisitReservation(data),
+    mutationFn: ({
+      projectId,
+      data,
+    }: {
+      projectId: number;
+      data: PrevisitReservationRequest;
+    }) => createPrevisitReservation(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -179,8 +206,15 @@ export function useUpdatePrevisitReservation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<PrevisitReservationRequest> }) =>
-      updatePrevisitReservation(id, data),
+    mutationFn: ({
+      projectId,
+      id,
+      data,
+    }: {
+      projectId: number;
+      id: number;
+      data: Partial<PrevisitReservationRequest>;
+    }) => updatePrevisitReservation(projectId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -194,7 +228,8 @@ export function useDeletePrevisitReservation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deletePrevisitReservation(id),
+    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
+      deletePrevisitReservation(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -228,11 +263,11 @@ export function usePrevisitDongs(projectId: number) {
 /**
  * 동호 목록 조회
  */
-export function usePrevisitDonghos(dong?: string) {
+export function usePrevisitDonghos(projectId: number, dong?: string) {
   return useQuery({
-    queryKey: previsitKeys.donghos(dong || ''),
-    queryFn: () => getPrevisitDonghos(dong!),
-    enabled: !!dong,
+    queryKey: previsitKeys.donghos(projectId, dong),
+    queryFn: () => getPrevisitDonghos(projectId, dong),
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 30, // 30분
   });
 }
@@ -244,10 +279,11 @@ export function usePrevisitDonghos(dong?: string) {
 /**
  * 사전방문 등록 목록 조회
  */
-export function usePrevisitDataList(params?: PrevisitDataListParams) {
+export function usePrevisitDataList(projectId: number, params?: PrevisitDataListParams) {
   return useQuery({
-    queryKey: previsitKeys.dataList(params),
-    queryFn: () => getPrevisitDataList(params),
+    queryKey: previsitKeys.dataList(projectId, params),
+    queryFn: () => getPrevisitDataList(projectId, params),
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -255,11 +291,11 @@ export function usePrevisitDataList(params?: PrevisitDataListParams) {
 /**
  * 사전방문 등록 상세 조회
  */
-export function usePrevisitData(id: number) {
+export function usePrevisitData(projectId: number, id: number) {
   return useQuery({
-    queryKey: previsitKeys.data(id),
-    queryFn: () => getPrevisitData(id),
-    enabled: !!id,
+    queryKey: previsitKeys.data(projectId, id),
+    queryFn: () => getPrevisitData(projectId, id),
+    enabled: !!projectId && !!id,
   });
 }
 
@@ -270,7 +306,8 @@ export function useCreatePrevisitData() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: PrevisitDataRequest) => createPrevisitData(data),
+    mutationFn: ({ projectId, data }: { projectId: number; data: PrevisitDataRequest }) =>
+      createPrevisitData(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -284,8 +321,15 @@ export function useUpdatePrevisitData() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<PrevisitDataRequest> }) =>
-      updatePrevisitData(id, data),
+    mutationFn: ({
+      projectId,
+      id,
+      data,
+    }: {
+      projectId: number;
+      id: number;
+      data: Partial<PrevisitDataRequest>;
+    }) => updatePrevisitData(projectId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -299,7 +343,8 @@ export function useDeletePrevisitData() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deletePrevisitData(id),
+    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
+      deletePrevisitData(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },
@@ -313,7 +358,8 @@ export function useReturnDevice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => returnDevice(id),
+    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
+      returnDevice(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: previsitKeys.all });
     },

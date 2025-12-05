@@ -1,5 +1,8 @@
 /**
  * 동호 관리 React Query Hooks
+ * API 문서 기준: 2025-12-05
+ *
+ * 모든 hook에 projectId 파라미터 필요 (URL path 형식 변경)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,8 +23,10 @@ import type { DonghoRequest, DonghoListParams } from '../types/dongho.types';
 
 export const donghoKeys = {
   all: ['dongho'] as const,
-  list: (params?: DonghoListParams) => [...donghoKeys.all, 'list', params] as const,
-  detail: (id: number) => [...donghoKeys.all, 'detail', id] as const,
+  list: (projectId: number, params?: DonghoListParams) =>
+    [...donghoKeys.all, 'list', projectId, params] as const,
+  detail: (projectId: number, id: number) =>
+    [...donghoKeys.all, 'detail', projectId, id] as const,
 };
 
 // =============================================================================
@@ -31,10 +36,11 @@ export const donghoKeys = {
 /**
  * 동호 코드 목록 조회
  */
-export function useDonghos(params?: DonghoListParams) {
+export function useDonghos(projectId: number, params?: DonghoListParams) {
   return useQuery({
-    queryKey: donghoKeys.list(params),
-    queryFn: () => getDonghos(params),
+    queryKey: donghoKeys.list(projectId, params),
+    queryFn: () => getDonghos(projectId, params),
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }
@@ -42,11 +48,11 @@ export function useDonghos(params?: DonghoListParams) {
 /**
  * 동호 코드 상세 조회
  */
-export function useDongho(id: number) {
+export function useDongho(projectId: number, id: number) {
   return useQuery({
-    queryKey: donghoKeys.detail(id),
-    queryFn: () => getDongho(id),
-    enabled: !!id,
+    queryKey: donghoKeys.detail(projectId, id),
+    queryFn: () => getDongho(projectId, id),
+    enabled: !!projectId && !!id,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }
@@ -58,7 +64,8 @@ export function useCreateDongho() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: DonghoRequest) => createDongho(data),
+    mutationFn: ({ projectId, data }: { projectId: number; data: DonghoRequest }) =>
+      createDongho(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: donghoKeys.all });
     },
@@ -72,8 +79,15 @@ export function useUpdateDongho() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<DonghoRequest> }) =>
-      updateDongho(id, data),
+    mutationFn: ({
+      projectId,
+      id,
+      data,
+    }: {
+      projectId: number;
+      id: number;
+      data: Partial<DonghoRequest>;
+    }) => updateDongho(projectId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: donghoKeys.all });
     },
@@ -87,7 +101,8 @@ export function useDeleteDongho() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deleteDongho(id),
+    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
+      deleteDongho(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: donghoKeys.all });
     },

@@ -26,6 +26,9 @@ import {
 } from '@/src/hooks/useDongho';
 import type { Dongho, DonghoRequest } from '@/src/types/dongho.types';
 
+// 현재 프로젝트 ID (추후 프로젝트 선택 기능 구현 시 동적으로 변경)
+const PROJECT_ID = 1;
+
 export default function DonghoManage() {
   // 편집 상태
   const [editingDongho, setEditingDongho] = useState<Dongho | null>(null);
@@ -44,7 +47,7 @@ export default function DonghoManage() {
   }>({ open: false, message: '', severity: 'info' });
 
   // 데이터 조회
-  const { data: donghosData, isLoading, error } = useDonghos();
+  const { data: donghosData, isLoading, error } = useDonghos(PROJECT_ID);
 
   // 뮤테이션
   const createMutation = useCreateDongho();
@@ -59,11 +62,11 @@ export default function DonghoManage() {
     async (data: DonghoRequest) => {
       try {
         if (editingDongho) {
-          await updateMutation.mutateAsync({ id: editingDongho.id, data });
+          await updateMutation.mutateAsync({ projectId: PROJECT_ID, id: editingDongho.id, data });
           setSnackbar({ open: true, message: '동호 코드가 수정되었습니다.', severity: 'success' });
           setEditingDongho(null);
         } else {
-          await createMutation.mutateAsync(data);
+          await createMutation.mutateAsync({ projectId: PROJECT_ID, data });
           setSnackbar({ open: true, message: '동호 코드가 등록되었습니다.', severity: 'success' });
         }
       } catch (err) {
@@ -95,7 +98,7 @@ export default function DonghoManage() {
     if (!deleteDialog.dongho) return;
 
     try {
-      await deleteMutation.mutateAsync(deleteDialog.dongho.id);
+      await deleteMutation.mutateAsync({ projectId: PROJECT_ID, id: deleteDialog.dongho.id });
       setSnackbar({ open: true, message: '삭제되었습니다.', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: '삭제에 실패했습니다.', severity: 'error' });

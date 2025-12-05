@@ -20,6 +20,9 @@ import {
 } from '@/src/hooks/usePrevisit';
 import type { PrevisitReservationRequest, PrevisitAvailableTimeSlot } from '@/src/types/previsit.types';
 
+// 현재 프로젝트 ID (추후 프로젝트 선택 기능 구현 시 동적으로 변경)
+const PROJECT_ID = 1;
+
 interface PrevisitReservationFormProps {
   onSubmit: (data: PrevisitReservationRequest) => void;
   isSubmitting?: boolean;
@@ -54,14 +57,12 @@ export default function PrevisitReservationForm({
   });
 
   // API 데이터 조회
-  const { data: previsitsData, isLoading: isPrevisitsLoading } = usePrevisits({ project_id: 1 });
+  const { data: previsitsData, isLoading: isPrevisitsLoading } = usePrevisits(PROJECT_ID);
   const previsits = useMemo(() => previsitsData?.list || [], [previsitsData]);
 
-  const { data: availableSlots } = usePrevisitAvailableSlots(
-    typeof formData.previsit_id === 'number' ? formData.previsit_id : 0
-  );
-  const { data: dongs, isLoading: isDongsLoading } = usePrevisitDongs(1);
-  const { data: donghos, isLoading: isDonghosLoading } = usePrevisitDonghos(formData.dong || undefined);
+  const { data: availableSlots } = usePrevisitAvailableSlots(PROJECT_ID);
+  const { data: dongs, isLoading: isDongsLoading } = usePrevisitDongs(PROJECT_ID);
+  const { data: donghos, isLoading: isDonghosLoading } = usePrevisitDonghos(PROJECT_ID, formData.dong || undefined);
 
   // 선택된 동호 정보
   const selectedDongho = useMemo(() => {

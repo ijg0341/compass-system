@@ -23,9 +23,8 @@ export interface Previsit {
   image_file_id: number | null;
 }
 
-/** 사전방문 행사 등록/수정 요청 */
+/** 사전방문 행사 등록/수정 요청 (project_id는 URL path로 전달) */
 export interface PrevisitRequest {
-  project_id: number;
   name: string;
   date_begin: string;         // YYYY-MM-DD
   date_end: string;           // YYYY-MM-DD
@@ -36,9 +35,8 @@ export interface PrevisitRequest {
   image_file_id?: number;
 }
 
-/** 사전방문 행사 목록 조회 파라미터 */
+/** 사전방문 행사 목록 조회 파라미터 (project_id는 URL path로 전달) */
 export interface PrevisitListParams {
-  project_id?: number;
   offset?: number;
   limit?: number;
 }

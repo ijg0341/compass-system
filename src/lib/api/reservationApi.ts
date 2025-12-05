@@ -253,7 +253,7 @@ export async function uploadFile(
   if (options?.isPublic) formData.append('is_public', 'true');
 
   const response = await api.post<ApiResponse<FileUploadResponse>>(
-    '/files/upload',
+    '/adm/files/upload',
     formData,
     {
       headers: {
@@ -280,7 +280,7 @@ export interface FileInfoResponse {
  */
 export async function getFileInfo(uuid: string): Promise<FileInfoResponse> {
   const response = await api.get<ApiResponse<FileInfoResponse>>(
-    `/files/${uuid}`
+    `/adm/files/${uuid}`
   );
   return response.data.data;
 }

@@ -27,9 +27,8 @@ const TIME_OPTIONS = Array.from({ length: 17 }, (_, i) => {
   return `${hour.toString().padStart(2, '0')}:00`;
 });
 
-// 초기 폼 데이터
+// 초기 폼 데이터 (project_id는 URL path로 전달)
 const INITIAL_FORM: PrevisitRequest = {
-  project_id: 1,
   name: '',
   date_begin: '',
   date_end: '',
