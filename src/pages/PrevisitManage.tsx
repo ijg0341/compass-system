@@ -3,7 +3,6 @@
  * 사전방문 행사를 생성하고 관리하는 페이지
  */
 import { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -34,8 +33,6 @@ const RESERVATION_BASE_URL = import.meta.env.VITE_RESERVATION_URL || 'https://cu
 const PROJECT_ID = 1;
 
 export default function PrevisitManagePage() {
-  const navigate = useNavigate();
-
   // UI 상태
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -89,17 +86,15 @@ export default function PrevisitManagePage() {
     [createMutation, uploadMutation]
   );
 
-  // 조회 (예약 화면으로 이동)
-  const handleView = useCallback(
-    (previsit: Previsit) => {
-      navigate(`/pre-visit/reservation?previsit_id=${previsit.id}`);
-    },
-    [navigate]
-  );
+  // 보기 (고객용 예약 페이지를 새 탭에서 열기)
+  const handleView = useCallback((previsit: Previsit) => {
+    const url = generatePrevisitUrl(RESERVATION_BASE_URL, previsit.uuid);
+    window.open(url, '_blank');
+  }, []);
 
-  // URL 복사 (해시 포함)
+  // URL 복사 (UUID 기반)
   const handleCopyUrl = useCallback((previsit: Previsit) => {
-    const url = generatePrevisitUrl(RESERVATION_BASE_URL, previsit.id, previsit.name);
+    const url = generatePrevisitUrl(RESERVATION_BASE_URL, previsit.uuid);
     navigator.clipboard.writeText(url);
     setSnackbar({ open: true, message: 'URL이 복사되었습니다.', severity: 'info' });
   }, []);

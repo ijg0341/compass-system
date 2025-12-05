@@ -12,6 +12,7 @@ import type { ApiDateResponse } from './api';
 /** 사전방문 행사 정보 */
 export interface Previsit {
   id: number;
+  uuid: string;               // UUID (고객용 URL 접근에 사용)
   project_id: number;
   name: string;
   date_begin: string | ApiDateResponse;  // YYYY-MM-DD 또는 API 날짜 객체
