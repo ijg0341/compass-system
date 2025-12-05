@@ -130,9 +130,9 @@ export interface PrevisitData {
   reservation_writer_name: string | null;   // 예약자명
   reservation_writer_phone: string | null;  // 예약자 연락처
   reservation_memo: string | null;    // 예약 메모
-  // dongho 정보 (TODO: 백엔드에서 dongho 테이블 JOIN 추가 필요)
-  dong?: string;
-  ho?: string;
+  // dongho 정보 (백엔드에서 dongho 테이블 JOIN - 2025-12-05 추가됨)
+  dong: string;
+  ho: string;
   contractor_name?: string;
   contractor_phone?: string;
   residence_type?: string;            // 입주형태

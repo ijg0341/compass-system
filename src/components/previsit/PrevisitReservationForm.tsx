@@ -60,7 +60,10 @@ export default function PrevisitReservationForm({
   const { data: previsitsData, isLoading: isPrevisitsLoading } = usePrevisits(PROJECT_ID);
   const previsits = useMemo(() => previsitsData?.list || [], [previsitsData]);
 
-  const { data: availableSlots } = usePrevisitAvailableSlots(PROJECT_ID);
+  const { data: availableSlots } = usePrevisitAvailableSlots(
+    PROJECT_ID,
+    formData.previsit_id || undefined
+  );
   const { data: dongs, isLoading: isDongsLoading } = usePrevisitDongs(PROJECT_ID);
   const { data: donghos, isLoading: isDonghosLoading } = usePrevisitDonghos(PROJECT_ID, formData.dong || undefined);
 

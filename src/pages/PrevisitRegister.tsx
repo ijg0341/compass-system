@@ -26,10 +26,14 @@ const PROJECT_ID = 1;
 export default function PrevisitRegisterPage() {
   const [searchParams] = useSearchParams();
   const initialPrevisitId = searchParams.get('previsit_id');
+  const initialSearchKeyword = searchParams.get('searchKeyword');
+  const initialDong = searchParams.get('dong');
 
   // 필터/페이징 상태
   const [filters, setFilters] = useState<PrevisitDataFilter>({
     previsit_id: initialPrevisitId ? Number(initialPrevisitId) : undefined,
+    searchKeyword: initialSearchKeyword || undefined,
+    dong: initialDong || undefined,
   });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -95,9 +99,13 @@ export default function PrevisitRegisterPage() {
     [returnDeviceMutation]
   );
 
-  // 방문 이력 검색
+  // 방문 이력 검색 (이름, 동으로 검색)
   const handleViewHistory = useCallback((visit: PrevisitData) => {
-    setFilters((prev) => ({ ...prev, dong: visit.dong || '' }));
+    setFilters((prev) => ({
+      ...prev,
+      searchKeyword: visit.contractor_name || visit.visitor_name || '',
+      dong: visit.dong || '',
+    }));
     setPage(0);
   }, []);
 

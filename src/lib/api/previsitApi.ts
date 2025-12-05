@@ -155,24 +155,29 @@ export async function deletePrevisitReservation(projectId: number, id: number): 
 
 /**
  * 예약 가능 일자/시간 조회
+ * @param projectId 프로젝트 ID
+ * @param previsitId 사전방문 행사 ID (특정 행사의 슬롯만 조회)
  */
 export async function getPrevisitAvailableSlots(
-  projectId: number
+  projectId: number,
+  previsitId?: number
 ): Promise<PrevisitAvailableSlotsResponse> {
   const response = await api.get<ApiResponse<PrevisitAvailableSlotsResponse>>(
-    `${getAdminBasePath(projectId)}/previsit-reservations/available-slots`
+    `${getAdminBasePath(projectId)}/previsit-reservations/available-slots`,
+    { params: previsitId ? { previsit_id: previsitId } : undefined }
   );
   return response.data.data;
 }
 
 /**
  * 동 목록 조회
+ * @deprecated 라우트 변경됨: /previsit-reservations/dongs → /donghos/dongs (2025-12-05)
  */
 export async function getPrevisitDongs(
   projectId: number
 ): Promise<string[]> {
   const response = await api.get<ApiResponse<ApiSimpleListData<{ dong: string }>>>(
-    `${getAdminBasePath(projectId)}/previsit-reservations/dongs`
+    `${getAdminBasePath(projectId)}/donghos/dongs`
   );
   // API가 [{ dong: "101동" }] 형식으로 반환하므로 변환
   return response.data.data.list.map((item) => item.dong);
@@ -180,13 +185,14 @@ export async function getPrevisitDongs(
 
 /**
  * 동호 목록 조회
+ * @deprecated 라우트 변경됨: /previsit-reservations/donghos → /donghos (2025-12-05)
  */
 export async function getPrevisitDonghos(
   projectId: number,
   dong?: string
 ): Promise<PrevisitDongho[]> {
   const response = await api.get<ApiResponse<ApiSimpleListData<PrevisitDongho>>>(
-    `${getAdminBasePath(projectId)}/previsit-reservations/donghos`,
+    `${getAdminBasePath(projectId)}/donghos`,
     { params: dong ? { dong } : undefined }
   );
   return response.data.data.list;
@@ -260,4 +266,67 @@ export async function returnDevice(projectId: number, id: number): Promise<void>
   await api.put(`${getAdminBasePath(projectId)}/previsit-data/${id}`, {
     rental_device_return: true,
   });
+}
+
+// =============================================================================
+// 4. 엑셀 다운로드 API (2025-12-05 추가)
+// =============================================================================
+
+/**
+ * 엑셀 파일 다운로드 공통 유틸
+ */
+async function downloadExcel(url: string, defaultFilename: string): Promise<void> {
+  const response = await api.get(url, {
+    responseType: 'blob',
+  });
+
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+
+  const contentDisposition = response.headers['content-disposition'];
+  const filename = contentDisposition
+    ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+    : defaultFilename;
+
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(blobUrl);
+}
+
+/**
+ * 사전방문 예약 엑셀 다운로드
+ * @param projectId 프로젝트 ID
+ * @param previsitId 사전방문 행사 ID (선택)
+ */
+export async function downloadPrevisitReservationsExcel(
+  projectId: number,
+  previsitId?: number
+): Promise<void> {
+  const url = previsitId
+    ? `${getAdminBasePath(projectId)}/previsit-reservations/excel?previsit_id=${previsitId}`
+    : `${getAdminBasePath(projectId)}/previsit-reservations/excel`;
+
+  await downloadExcel(url, `previsit_reservations_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+/**
+ * 사전방문 등록 엑셀 다운로드
+ * @param projectId 프로젝트 ID
+ * @param previsitId 사전방문 행사 ID (선택)
+ */
+export async function downloadPrevisitDataExcel(
+  projectId: number,
+  previsitId?: number
+): Promise<void> {
+  const url = previsitId
+    ? `${getAdminBasePath(projectId)}/previsit-data/excel?previsit_id=${previsitId}`
+    : `${getAdminBasePath(projectId)}/previsit-data/excel`;
+
+  await downloadExcel(url, `previsit_data_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }

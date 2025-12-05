@@ -57,8 +57,8 @@ export const previsitKeys = {
     [...previsitKeys.all, 'reservations', projectId, params] as const,
   reservation: (projectId: number, id: number) =>
     [...previsitKeys.all, 'reservation', projectId, id] as const,
-  availableSlots: (projectId: number) =>
-    [...previsitKeys.all, 'availableSlots', projectId] as const,
+  availableSlots: (projectId: number, previsitId?: number) =>
+    [...previsitKeys.all, 'availableSlots', projectId, previsitId] as const,
   dongs: (projectId: number) => [...previsitKeys.all, 'dongs', projectId] as const,
   donghos: (projectId: number, dong?: string) =>
     [...previsitKeys.all, 'donghos', projectId, dong] as const,
@@ -238,12 +238,14 @@ export function useDeletePrevisitReservation() {
 
 /**
  * 예약 가능 일자/시간 조회
+ * @param projectId 프로젝트 ID
+ * @param previsitId 사전방문 행사 ID (특정 행사의 슬롯만 조회)
  */
-export function usePrevisitAvailableSlots(projectId: number) {
+export function usePrevisitAvailableSlots(projectId: number, previsitId?: number) {
   return useQuery({
-    queryKey: previsitKeys.availableSlots(projectId),
-    queryFn: () => getPrevisitAvailableSlots(projectId),
-    enabled: !!projectId,
+    queryKey: previsitKeys.availableSlots(projectId, previsitId),
+    queryFn: () => getPrevisitAvailableSlots(projectId, previsitId),
+    enabled: !!projectId && !!previsitId,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }

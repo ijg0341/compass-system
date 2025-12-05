@@ -9,12 +9,9 @@ import {
   TableRow,
   TablePagination,
   Chip,
-  IconButton,
-  Tooltip,
-  Stack,
+  Button,
   Typography,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { PrevisitReservation, Previsit } from '@/src/types/previsit.types';
 
 interface PrevisitReservationTableProps {
@@ -26,8 +23,6 @@ interface PrevisitReservationTableProps {
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   onGoToRegister: (reservation: PrevisitReservation) => void;
-  onDelete: (id: number) => void;
-  isDeleting?: boolean;
 }
 
 export default function PrevisitReservationTable({
@@ -39,8 +34,6 @@ export default function PrevisitReservationTable({
   onPageChange,
   onRowsPerPageChange,
   onGoToRegister,
-  onDelete,
-  isDeleting = false,
 }: PrevisitReservationTableProps) {
   const handleChangePage = (_event: unknown, newPage: number) => {
     onPageChange(newPage);
@@ -135,23 +128,14 @@ export default function PrevisitReservationTable({
                     </Typography>
                   </TableCell>
                   <TableCell align="center" onClick={(e) => e.stopPropagation()}>
-                    <Stack direction="row" spacing={0.5} justifyContent="center">
-                      <Tooltip title="방문등록으로 이동">
-                        <IconButton size="small" onClick={() => onGoToRegister(reservation)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="삭제">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => onDelete(reservation.id)}
-                          disabled={isDeleting}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => onGoToRegister(reservation)}
+                      sx={{ minWidth: 'auto', px: 1, py: 0.25, fontSize: '0.75rem' }}
+                    >
+                      조회
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

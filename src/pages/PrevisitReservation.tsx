@@ -92,12 +92,20 @@ export default function PrevisitReservationPage() {
     [deleteMutation]
   );
 
-  // 방문등록 화면으로 이동
+  // 방문등록 화면으로 이동 (행사명, 이름, 동으로 검색된 상태로)
   const handleGoToRegister = useCallback(
     (reservation: PrevisitReservation) => {
-      navigate(
-        `/smartnet/pre-visit/register?previsit_id=${reservation.previsit_id}&dongho_id=${reservation.dongho_id}`
-      );
+      const params = new URLSearchParams();
+      if (reservation.previsit_id) {
+        params.set('previsit_id', String(reservation.previsit_id));
+      }
+      if (reservation.writer_name) {
+        params.set('searchKeyword', reservation.writer_name);
+      }
+      if (reservation.dong) {
+        params.set('dong', reservation.dong);
+      }
+      navigate(`/pre-visit/register?${params.toString()}`);
     },
     [navigate]
   );
@@ -164,8 +172,6 @@ export default function PrevisitReservationPage() {
           onPageChange={setPage}
           onRowsPerPageChange={setRowsPerPage}
           onGoToRegister={handleGoToRegister}
-          onDelete={handleDelete}
-          isDeleting={deleteMutation.isPending}
         />
       )}
 

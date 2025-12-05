@@ -19,15 +19,15 @@ export interface Dongho {
   contractor_birth: string | null;
 }
 
-/** 동호 코드 등록/수정 요청 */
+/** 동호 코드 등록/수정 요청
+ * @note contractor 필드는 2025-12-05부터 dongho_household 테이블로 분리되어
+ *       등록/수정 시 더 이상 사용되지 않음 (조회 시에는 자동 조인됨)
+ */
 export interface DonghoRequest {
   dong: string;
   ho: string;
   unit_type?: string;
   ev_lines?: string[];
-  contractor_name?: string;
-  contractor_phone?: string;
-  contractor_birth?: string;
 }
 
 /** 동호 코드 목록 조회 파라미터 */
