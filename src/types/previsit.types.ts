@@ -51,16 +51,16 @@ export interface PrevisitReservation {
   id: number;
   previsit_id: number;
   dongho_id: number;
-  reservation_date: string | ApiDateResponse;
+  reservation_date: string;     // YYYY-MM-DD (서버에서 포맷팅하여 반환)
   reservation_time: string;
   writer_name: string;
   writer_phone: string;
   memo: string | null;
-  // 조회 시 추가되는 정보
-  dong?: string;
-  ho?: string;
-  contractor_name?: string;
-  contractor_phone?: string;
+  // 조회 시 JOIN으로 추가되는 정보
+  dong: string | null;
+  ho: string | null;
+  contractor_name: string | null;
+  contractor_phone: string | null;
 }
 
 /** 사전방문 예약 등록/수정 요청 */
@@ -116,27 +116,27 @@ export interface PrevisitData {
   id: number;
   previsit_id: number;
   dongho_id: number;
-  visit_date: string | ApiDateResponse;
+  visit_date: string;                 // YYYY-MM-DD (서버에서 포맷팅하여 반환)
   visit_time: string;
   visitor_name: string;
   visitor_phone: string;
   companion: string | null;           // 동행자 정보
   rental_device_no: string | null;    // 단말기 번호
   rental_device_return: boolean;      // 단말기 회수 여부
-  // 조회 시 추가되는 정보
+  // 예약 정보 (previsit_reservation 테이블 JOIN)
+  reservation_id: number | null;      // 예약 ID
+  reservation_date: string | null;    // YYYY-MM-DD
+  reservation_time: string | null;    // 예약시간
+  reservation_writer_name: string | null;   // 예약자명
+  reservation_writer_phone: string | null;  // 예약자 연락처
+  reservation_memo: string | null;    // 예약 메모
+  // dongho 정보 (TODO: 백엔드에서 dongho 테이블 JOIN 추가 필요)
   dong?: string;
   ho?: string;
   contractor_name?: string;
   contractor_phone?: string;
   residence_type?: string;            // 입주형태
-  move_in_scheduled_date?: string;    // 입주예정일
-  move_in_date?: string;              // 입주예정일 (별칭)
-  // 예약 정보 (조인 조회 시)
-  reservation_writer_name?: string;   // 예약자명
-  reservation_date?: string | ApiDateResponse;  // 예약일
-  reservation_time?: string;          // 예약시간
-  reservation_writer_phone?: string;  // 예약자 연락처
-  reservation_memo?: string;          // 예약 메모
+  move_in_date?: string;              // 입주예정일
 }
 
 /** 사전방문 등록 요청 */
