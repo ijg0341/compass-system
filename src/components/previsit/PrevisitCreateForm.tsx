@@ -21,10 +21,15 @@ import {
 import dayjs from 'dayjs';
 import type { PrevisitRequest } from '@/src/types/previsit.types';
 
-// 시간 옵션 생성 (06:00 ~ 22:00)
-const TIME_OPTIONS = Array.from({ length: 17 }, (_, i) => {
-  const hour = i + 6;
-  return `${hour.toString().padStart(2, '0')}:00`;
+// 시간 옵션 생성 (06:00 ~ 22:00, 10분 단위)
+const TIME_OPTIONS = Array.from({ length: 17 * 6 }, (_, i) => {
+  const totalMinutes = 6 * 60 + i * 10; // 06:00부터 시작
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+}).filter((time) => {
+  const [hour] = time.split(':').map(Number);
+  return hour <= 22; // 22:00까지만
 });
 
 // 초기 폼 데이터 (project_id는 URL path로 전달)
