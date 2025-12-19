@@ -49,7 +49,9 @@ const IMPLEMENTED_PAGES = [
   '/user/resident',         // MemberResident.tsx
   '/smartnet/pre-visit',    // PrevisitManage.tsx
   '/smartnet/move',         // SmartnetCreate.tsx
+  '/smartnet/vote',         // VoteMeetingCreate.tsx
   '/base-code/dongho',      // DonghoManage.tsx
+  '/vote/meetings',         // VoteMeetingList.tsx
 ];
 
 const menuItems: NavItem[] = [
@@ -114,9 +116,7 @@ const menuItems: NavItem[] = [
     icon: HowToVote,
     path: '/vote',
     subMenu: [
-      { text: '조합원 명부', path: '/vote/member-list' },
-      { text: '안건 등록', path: '/vote/agenda' },
-      { text: '투표 결과', path: '/vote/result' },
+      { text: '총회 관리', path: '/vote/meetings' },
     ]
   },
   {

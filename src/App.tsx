@@ -20,6 +20,7 @@ import PrevisitRegister from '@/src/pages/PrevisitRegister'
 import DonghoManage from '@/src/pages/DonghoManage'
 import VoteMeetingList from '@/src/pages/VoteMeetingList'
 import VoteMeetingDetail from '@/src/pages/VoteMeetingDetail'
+import VoteMeetingCreate from '@/src/pages/VoteMeetingCreate'
 
 function App() {
   return (
@@ -120,6 +121,13 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <SmartnetCreate />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/smartnet/vote" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VoteMeetingCreate />
               </AdminLayout>
             </ProtectedRoute>
           } />

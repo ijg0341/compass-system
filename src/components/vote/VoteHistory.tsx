@@ -1,0 +1,274 @@
+/**
+ * 투표 내역 컴포넌트
+ * 화면 ID: CP-SA-09-004
+ */
+import { useState, useCallback } from 'react';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Button,
+  Typography,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import { Download as DownloadIcon } from '@mui/icons-material';
+import { useVoteRecords, useExportVoteRecords } from '@/src/hooks/useVote';
+import type { VoteRecord, AttendanceType } from '@/src/types/vote.types';
+import PaperVoteModal from './PaperVoteModal';
+
+interface VoteHistoryProps {
+  projectId: number;
+  meetingId: number;
+}
+
+// 현장참석 라벨
+const attendanceLabels: Record<AttendanceType, string> = {
+  self: '본인',
+  proxy: '대리인',
+};
+
+export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) {
+  // 페이지네이션
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // 서면투표 모달
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<VoteRecord | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // 스낵바
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'info' });
+
+  // API 훅
+  const { data: recordsData, isLoading, refetch } = useVoteRecords(projectId, meetingId, {
+    offset: page * rowsPerPage,
+    limit: rowsPerPage,
+  });
+  const exportMutation = useExportVoteRecords();
+
+  const records = recordsData?.list || [];
+  const total = recordsData?.total || 0;
+
+  // 서면투표 등록 버튼 클릭
+  const handlePaperVoteRegister = useCallback((record: VoteRecord) => {
+    setSelectedRecord(record);
+    setIsEditMode(false);
+    setModalOpen(true);
+  }, []);
+
+  // 서면투표 수정 버튼 클릭
+  const handlePaperVoteEdit = useCallback((record: VoteRecord) => {
+    setSelectedRecord(record);
+    setIsEditMode(true);
+    setModalOpen(true);
+  }, []);
+
+  // 모달 닫기
+  const handleModalClose = useCallback(() => {
+    setModalOpen(false);
+    setSelectedRecord(null);
+  }, []);
+
+  // 모달 저장 완료
+  const handleModalSave = useCallback(() => {
+    setModalOpen(false);
+    setSelectedRecord(null);
+    setSnackbar({ open: true, message: '서면투표가 등록되었습니다.', severity: 'success' });
+    refetch();
+  }, [refetch]);
+
+  // 엑셀 다운로드
+  const handleExport = async () => {
+    try {
+      const blob = await exportMutation.mutateAsync({ projectId, meetingId });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `투표내역_${meetingId}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setSnackbar({ open: true, message: '다운로드에 실패했습니다.', severity: 'error' });
+    }
+  };
+
+  // 투표 버튼 렌더링
+  const renderVoteButton = (record: VoteRecord) => {
+    // 투표하지 않은 경우: 서면투표 등록 버튼
+    if (!record.vote_method) {
+      return (
+        <Button
+          size="small"
+          variant="contained"
+          onClick={() => handlePaperVoteRegister(record)}
+        >
+          서면투표 등록
+        </Button>
+      );
+    }
+
+    // 서면투표한 경우: 서면투표 수정 버튼
+    if (record.vote_method === 'paper') {
+      return (
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => handlePaperVoteEdit(record)}
+        >
+          서면투표 수정
+        </Button>
+      );
+    }
+
+    // 전자투표한 경우: 투표방식만 표시
+    return <Typography variant="body2">전자</Typography>;
+  };
+
+  return (
+    <Box>
+      {/* 엑셀 다운로드 버튼 */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={exportMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
+          onClick={handleExport}
+          disabled={exportMutation.isPending}
+        >
+          엑셀 다운로드
+        </Button>
+      </Box>
+
+      {/* 테이블 */}
+      <Paper
+        sx={{
+          background: 'rgba(26, 26, 26, 0.7)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600, width: 80 }}>가입번호</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 60 }}>동</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 60 }}>호</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 60 }}>타입</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>성명</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 110 }}>생년월일</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80 }} align="center">
+                  사전투표
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80 }} align="center">
+                  현장참석
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 130 }} align="center">
+                  투표방식
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : records.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">투표 내역이 없습니다.</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                records.map((record) => (
+                  <TableRow key={record.id} hover>
+                    <TableCell>{record.member_no}</TableCell>
+                    <TableCell>{record.dong || '-'}</TableCell>
+                    <TableCell>{record.ho || '-'}</TableCell>
+                    <TableCell>{record.unit_type || '-'}</TableCell>
+                    <TableCell>{record.member_name}</TableCell>
+                    <TableCell>{record.birth_date}</TableCell>
+                    <TableCell align="center">
+                      {record.pre_voted ? 'O' : ''}
+                    </TableCell>
+                    <TableCell align="center">
+                      {record.attendance_type ? attendanceLabels[record.attendance_type] : ''}
+                    </TableCell>
+                    <TableCell align="center">{renderVoteButton(record)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          component="div"
+          count={total}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          labelRowsPerPage="페이지당 행 수:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 총 ${count}건`}
+        />
+      </Paper>
+
+      {/* 서면투표 등록/수정 모달 */}
+      {selectedRecord && (
+        <PaperVoteModal
+          open={modalOpen}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+          projectId={projectId}
+          meetingId={meetingId}
+          memberId={selectedRecord.member_id}
+          memberInfo={{
+            name: selectedRecord.member_name,
+            birth_date: selectedRecord.birth_date,
+            dong: selectedRecord.dong,
+            ho: selectedRecord.ho,
+            phone: selectedRecord.phone,
+          }}
+          isEditMode={isEditMode}
+          existingVotes={selectedRecord.votes}
+        />
+      )}
+
+      {/* 스낵바 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

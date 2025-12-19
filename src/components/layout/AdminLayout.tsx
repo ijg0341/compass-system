@@ -19,7 +19,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         sx={{
           flexGrow: 1,
           marginTop: '112px', // Header(64px) + HorizontalNav(48px)
-          padding: 2,
+          px: 3,
+          py: 2,
           minHeight: 'calc(100vh - 112px)',
           width: '100%',
         }}
