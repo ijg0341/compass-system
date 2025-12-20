@@ -28,7 +28,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useAgendas, useRegisterPaperVote, useUpdatePaperVote } from '@/src/hooks/useVote';
-import type { Agenda, AgendaVote, VoteChoice } from '@/src/types/vote.types';
+import type { Agenda, AgendaVote } from '@/src/types/vote.types';
 
 interface PaperVoteModalProps {
   open: boolean;
@@ -46,11 +46,13 @@ interface PaperVoteModalProps {
   };
   isEditMode: boolean;
   existingVotes?: AgendaVote[];
+  existingVoteDate?: string;
+  existingVoteDocument?: Record<string, unknown> | null;
 }
 
 interface VoteSelection {
   agenda_id: number;
-  choice: VoteChoice | number | null;
+  choice: string | null;  // 서버 answers 값 사용
 }
 
 interface UploadedFile {
@@ -69,6 +71,8 @@ export default function PaperVoteModal({
   memberInfo,
   isEditMode,
   existingVotes,
+  existingVoteDate,
+  existingVoteDocument,
 }: PaperVoteModalProps) {
   // 서면결의 날짜
   const [paperVoteDate, setPaperVoteDate] = useState('');
@@ -92,13 +96,13 @@ export default function PaperVoteModal({
   useEffect(() => {
     if (agendas) {
       if (isEditMode && existingVotes) {
-        // 수정 모드: 기존 투표 선택 로드
+        // 수정 모드: 기존 투표 선택 로드 (서버 값 그대로 사용)
         setVotes(
           agendas.map((agenda) => {
             const existing = existingVotes.find((v) => v.agenda_id === agenda.id);
             return {
               agenda_id: agenda.id,
-              choice: existing?.choice || null,
+              choice: existing?.answer || null,
             };
           })
         );
@@ -114,8 +118,24 @@ export default function PaperVoteModal({
     }
   }, [agendas, isEditMode, existingVotes]);
 
+  // 수정 모드: 기존 날짜 및 첨부파일 로드
+  useEffect(() => {
+    if (isEditMode) {
+      // 날짜 로드
+      if (existingVoteDate) {
+        setPaperVoteDate(existingVoteDate);
+      }
+      // 첨부파일은 현재 서버에서 파일 정보만 저장되므로 표시만 함
+      // 실제 파일 객체는 다시 업로드 필요
+    } else {
+      // 등록 모드: 초기화
+      setPaperVoteDate('');
+      setFiles([]);
+    }
+  }, [isEditMode, existingVoteDate, existingVoteDocument]);
+
   // 투표 선택 변경
-  const handleVoteChange = useCallback((agendaId: number, choice: VoteChoice | number) => {
+  const handleVoteChange = useCallback((agendaId: number, choice: string) => {
     setVotes((prev) =>
       prev.map((v) => (v.agenda_id === agendaId ? { ...v, choice } : v))
     );
@@ -198,8 +218,8 @@ export default function PaperVoteModal({
 
     const missingVote = votes.find((v) => v.choice === null);
     if (missingVote && agendas) {
-      const agenda = agendas.find((a) => a.id === missingVote.agenda_id);
-      setError(`안건 제${agenda?.order}호 의사표시가 필요합니다.`);
+      const agendaIndex = agendas.findIndex((a) => a.id === missingVote.agenda_id);
+      setError(`안건 제${agendaIndex + 1}호 의사표시가 필요합니다.`);
       return false;
     }
 
@@ -211,11 +231,12 @@ export default function PaperVoteModal({
     if (!validate()) return;
 
     try {
+      // choice가 이미 서버 값("찬성", "반대" 등)이므로 그대로 사용
       const voteData = votes
         .filter((v) => v.choice !== null)
         .map((v) => ({
-          agenda_id: v.agenda_id,
-          choice: v.choice as VoteChoice | number,
+          conference_agenda_id: v.agenda_id,
+          answer: String(v.choice),
         }));
 
       if (isEditMode) {
@@ -224,10 +245,10 @@ export default function PaperVoteModal({
           meetingId,
           memberId,
           data: {
-            member_id: memberId,
-            paper_vote_date: paperVoteDate,
+            conference_voter_id: memberId,
+            vote_date: paperVoteDate,
             votes: voteData,
-            attachment_files: files.map((f) => f.file),
+            vote_document: files.length > 0 ? JSON.stringify(files.map((f) => f.name)) : undefined,
           },
         });
       } else {
@@ -235,10 +256,10 @@ export default function PaperVoteModal({
           projectId,
           meetingId,
           data: {
-            member_id: memberId,
-            paper_vote_date: paperVoteDate,
+            conference_voter_id: memberId,
+            vote_date: paperVoteDate,
             votes: voteData,
-            attachment_files: files.map((f) => f.file),
+            vote_document: files.length > 0 ? JSON.stringify(files.map((f) => f.name)) : undefined,
           },
         });
       }
@@ -260,47 +281,25 @@ export default function PaperVoteModal({
     onSave,
   ]);
 
-  // 안건 선택지 렌더링
+  // 안건 선택지 렌더링 - 서버에서 주는 answers 배열 사용
   const renderChoices = (agenda: Agenda) => {
     const currentVote = votes.find((v) => v.agenda_id === agenda.id);
+    const answers = agenda.answers || ['찬성', '반대', '기권'];
 
-    if (agenda.vote_type === 'approval') {
-      return (
-        <RadioGroup
-          row
-          value={currentVote?.choice || ''}
-          onChange={(e) => handleVoteChange(agenda.id, e.target.value as VoteChoice)}
-        >
-          <FormControlLabel value="agree" control={<Radio size="small" />} label="찬성" />
-          <FormControlLabel value="disagree" control={<Radio size="small" />} label="반대" />
-          <FormControlLabel value="abstain" control={<Radio size="small" />} label="기권" />
-        </RadioGroup>
-      );
-    }
-
-    // 선택형
     return (
       <RadioGroup
         row
-        value={currentVote?.choice?.toString() || ''}
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val === 'abstain') {
-            handleVoteChange(agenda.id, 'abstain');
-          } else {
-            handleVoteChange(agenda.id, Number(val));
-          }
-        }}
+        value={currentVote?.choice || ''}
+        onChange={(e) => handleVoteChange(agenda.id, e.target.value)}
       >
-        {agenda.options?.map((option) => (
+        {answers.map((answer) => (
           <FormControlLabel
-            key={option.id}
-            value={option.id.toString()}
+            key={answer}
+            value={answer}
             control={<Radio size="small" />}
-            label={option.label}
+            label={answer}
           />
         ))}
-        <FormControlLabel value="abstain" control={<Radio size="small" />} label="기권" />
       </RadioGroup>
     );
   };
@@ -521,10 +520,10 @@ export default function PaperVoteModal({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {agendas?.map((agenda) => (
+                  {agendas?.map((agenda, index) => (
                     <TableRow key={agenda.id}>
-                      <TableCell>제{agenda.order}호</TableCell>
-                      <TableCell>{agenda.title}</TableCell>
+                      <TableCell>제{index + 1}호</TableCell>
+                      <TableCell>{agenda.name}</TableCell>
                       <TableCell>{renderChoices(agenda)}</TableCell>
                     </TableRow>
                   ))}

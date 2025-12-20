@@ -86,7 +86,7 @@ export default function VoteMeetingDetailPage() {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Typography variant="h5" fontWeight={700}>
-            총회명: {meeting.title}
+            총회명: {meeting.name}
           </Typography>
           <ToggleButtonGroup
             value={currentTab}

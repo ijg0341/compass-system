@@ -85,22 +85,22 @@ export default function MeetingTable({
                 <TableRow key={meeting.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight={500} noWrap>
-                      {meeting.title}
+                      {meeting.name}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {meeting.vote_start_date.slice(0, 10)}
+                    {meeting.vote_start_date?.slice(0, 10) || '-'}
                   </TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {meeting.vote_end_date.slice(0, 10)}
+                    {meeting.vote_end_date?.slice(0, 10) || '-'}
                   </TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {meeting.meeting_date}
+                    {meeting.conference_date}
                   </TableCell>
-                  <TableCell align="center">{meeting.total_members.toLocaleString()}</TableCell>
-                  <TableCell align="center">{meeting.quorum_count?.toLocaleString() || '-'}</TableCell>
-                  <TableCell align="center">{meeting.voted_count.toLocaleString()}</TableCell>
-                  <TableCell align="center">{meeting.agenda_count || '-'}</TableCell>
+                  <TableCell align="center">{(meeting.voter_count || 0).toLocaleString()}</TableCell>
+                  <TableCell align="center">{(meeting.quorum_count || 0).toLocaleString()}</TableCell>
+                  <TableCell align="center">{(meeting.voted_count || 0).toLocaleString()}</TableCell>
+                  <TableCell align="center">{meeting.agenda_count || 0}</TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={1} justifyContent="center">
                       <Button size="small" variant="outlined" onClick={() => onRoster(meeting)}>

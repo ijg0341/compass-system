@@ -60,15 +60,14 @@ const preVoteIntentionLabels: Record<PreVoteIntention, string> = {
 
 // 초기 폼 상태
 const initialFormState: VoteMemberRequest = {
-  member_no: '',
+  voter_id: undefined,
   name: '',
   phone: '',
-  birth_date: '',
-  dong: '',
-  ho: '',
-  unit_type: '',
-  pre_vote_intention: 'undecided',
-  revote_count: 0,
+  birthday: '',
+  dong: undefined,
+  ho: undefined,
+  type: '',
+  prevote_intention: 'undecided',
 };
 
 export default function MemberRoster({ projectId, meetingId }: MemberRosterProps) {
@@ -112,7 +111,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
   const total = membersData?.total || 0;
 
   // 폼 입력 핸들러
-  const handleInputChange = (field: keyof VoteMemberRequest, value: string | number) => {
+  const handleInputChange = (field: keyof VoteMemberRequest, value: string | number | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setFormErrors((prev) => ({ ...prev, [field]: '' }));
   };
@@ -127,8 +126,8 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
     if (!formData.phone.trim()) {
       errors.phone = '필수';
     }
-    if (!formData.birth_date) {
-      errors.birth_date = '필수';
+    if (!formData.birthday) {
+      errors.birthday = '필수';
     }
 
     setFormErrors(errors);
@@ -142,7 +141,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
     try {
       if (editingId) {
         const member = members.find((m) => m.id === editingId);
-        if (member?.has_voted) {
+        if (member && member.vote_count > 0) {
           setErrorMessage('사전투표가 이미 완료된 경우 변경 불가합니다.');
           setErrorDialogOpen(true);
           return;
@@ -169,10 +168,10 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
       refetch();
     } catch (error: unknown) {
       const errorObj = error as { message?: string };
-      if (errorObj.message?.includes('member_no')) {
+      if (errorObj.message?.includes('가입번호')) {
         setErrorMessage('이미 존재하는 가입번호입니다.');
         setErrorDialogOpen(true);
-      } else if (errorObj.message?.includes('dong_ho')) {
+      } else if (errorObj.message?.includes('동/호')) {
         setErrorMessage('이미 존재하는 동/호입니다.');
         setErrorDialogOpen(true);
       } else {
@@ -185,15 +184,14 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
   const handleEdit = useCallback((member: VoteMember) => {
     setEditingId(member.id);
     setFormData({
-      member_no: member.member_no,
+      voter_id: member.voter_id,
       name: member.name,
       phone: member.phone,
-      birth_date: member.birth_date,
-      dong: member.dong || '',
-      ho: member.ho || '',
-      unit_type: member.unit_type || '',
-      pre_vote_intention: member.pre_vote_intention,
-      revote_count: member.revote_count,
+      birthday: member.birthday,
+      dong: member.dong,
+      ho: member.ho,
+      type: member.type || '',
+      prevote_intention: member.prevote_intention || 'undecided',
     });
   }, []);
 
@@ -321,8 +319,9 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                 <TextField
                   size="small"
                   fullWidth
-                  value={formData.member_no}
-                  onChange={(e) => handleInputChange('member_no', e.target.value)}
+                  type="number"
+                  value={formData.voter_id || ''}
+                  onChange={(e) => handleInputChange('voter_id', e.target.value ? parseInt(e.target.value) : undefined)}
                   placeholder="자동생성"
                 />
               </TableCell>
@@ -331,8 +330,9 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                 <TextField
                   size="small"
                   fullWidth
-                  value={formData.dong}
-                  onChange={(e) => handleInputChange('dong', e.target.value)}
+                  type="number"
+                  value={formData.dong || ''}
+                  onChange={(e) => handleInputChange('dong', e.target.value ? parseInt(e.target.value) : undefined)}
                 />
               </TableCell>
             </TableRow>
@@ -344,8 +344,9 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                 <TextField
                   size="small"
                   fullWidth
-                  value={formData.ho}
-                  onChange={(e) => handleInputChange('ho', e.target.value)}
+                  type="number"
+                  value={formData.ho || ''}
+                  onChange={(e) => handleInputChange('ho', e.target.value ? parseInt(e.target.value) : undefined)}
                 />
               </TableCell>
               <TableCell component="th">타입</TableCell>
@@ -353,8 +354,8 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                 <TextField
                   size="small"
                   fullWidth
-                  value={formData.unit_type}
-                  onChange={(e) => handleInputChange('unit_type', e.target.value)}
+                  value={formData.type}
+                  onChange={(e) => handleInputChange('type', e.target.value)}
                 />
               </TableCell>
             </TableRow>
@@ -369,9 +370,9 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                   size="small"
                   fullWidth
                   type="date"
-                  value={formData.birth_date}
-                  onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                  error={!!formErrors.birth_date}
+                  value={formData.birthday}
+                  onChange={(e) => handleInputChange('birthday', e.target.value)}
+                  error={!!formErrors.birthday}
                 />
               </TableCell>
               <TableCell component="th">
@@ -388,7 +389,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
               </TableCell>
             </TableRow>
 
-            {/* 4행: 연락처, 재투표 회수 */}
+            {/* 4행: 연락처, 사전투표의향 */}
             <TableRow>
               <TableCell component="th">
                 연락처 <Typography component="span" color="error">*</Typography>
@@ -402,27 +403,12 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
                   error={!!formErrors.phone}
                 />
               </TableCell>
-              <TableCell component="th">재투표 회수</TableCell>
-              <TableCell>
-                <TextField
-                  size="small"
-                  fullWidth
-                  type="number"
-                  value={formData.revote_count}
-                  onChange={(e) => handleInputChange('revote_count', parseInt(e.target.value) || 0)}
-                  inputProps={{ min: 0 }}
-                />
-              </TableCell>
-            </TableRow>
-
-            {/* 5행: 사전투표의향 */}
-            <TableRow>
               <TableCell component="th">사전투표의향</TableCell>
-              <TableCell colSpan={3}>
+              <TableCell>
                 <RadioGroup
                   row
-                  value={formData.pre_vote_intention}
-                  onChange={(e) => handleInputChange('pre_vote_intention', e.target.value)}
+                  value={formData.prevote_intention}
+                  onChange={(e) => handleInputChange('prevote_intention', e.target.value)}
                   sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
                 >
                   <FormControlLabel value="planned" control={<Radio size="small" />} label="예정" />
@@ -507,22 +493,22 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
               ) : (
                 members.map((member) => (
                   <TableRow key={member.id} hover>
-                    <TableCell>{member.member_no}</TableCell>
+                    <TableCell>{member.voter_id}</TableCell>
                     <TableCell>{member.dong || '-'}</TableCell>
                     <TableCell>{member.ho || '-'}</TableCell>
-                    <TableCell>{member.unit_type || '-'}</TableCell>
+                    <TableCell>{member.type || '-'}</TableCell>
                     <TableCell>{member.name}</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{member.birth_date}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{member.birthday}</TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{member.phone}</TableCell>
-                    <TableCell>{preVoteIntentionLabels[member.pre_vote_intention]}</TableCell>
-                    <TableCell align="center">{member.revote_count}</TableCell>
+                    <TableCell>{preVoteIntentionLabels[member.prevote_intention as keyof typeof preVoteIntentionLabels] || '-'}</TableCell>
+                    <TableCell align="center">{member.vote_count}</TableCell>
                     <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                       <Tooltip title="수정">
                         <span>
                           <IconButton
                             size="small"
                             onClick={() => handleEdit(member)}
-                            disabled={member.has_voted}
+                            disabled={member.vote_count > 0}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>

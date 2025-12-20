@@ -9,10 +9,6 @@ import {
   Typography,
   TextField,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Radio,
   RadioGroup,
   FormControlLabel,
@@ -23,7 +19,7 @@ import {
   Autocomplete,
 } from '@mui/material';
 import { useVoteMembers, useAgendas, useRegisterPaperVote } from '@/src/hooks/useVote';
-import type { VoteMember, Agenda, VoteChoice } from '@/src/types/vote.types';
+import type { VoteMember, Agenda } from '@/src/types/vote.types';
 
 interface PaperVoteFormProps {
   projectId: number;
@@ -31,8 +27,8 @@ interface PaperVoteFormProps {
 }
 
 interface VoteSelection {
-  agenda_id: number;
-  choice: VoteChoice | number;
+  conference_agenda_id: number;
+  answer: string;
 }
 
 export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormProps) {
@@ -68,17 +64,17 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
     if (agendas) {
       setVotes(
         agendas.map((agenda) => ({
-          agenda_id: agenda.id,
-          choice: 'agree' as VoteChoice,
+          conference_agenda_id: agenda.id,
+          answer: (agenda.answers?.[0]) || '찬성',
         }))
       );
     }
   };
 
   // 투표 선택 변경
-  const handleVoteChange = (agendaId: number, choice: VoteChoice | number) => {
+  const handleVoteChange = (agendaId: number, answer: string) => {
     setVotes((prev) =>
-      prev.map((v) => (v.agenda_id === agendaId ? { ...v, choice } : v))
+      prev.map((v) => (v.conference_agenda_id === agendaId ? { ...v, answer } : v))
     );
   };
 
@@ -99,8 +95,8 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
         projectId,
         meetingId,
         data: {
-          member_id: selectedMember.id,
-          paper_vote_date: new Date().toISOString(),
+          conference_voter_id: selectedMember.id,
+          vote_date: new Date().toISOString().slice(0, 10),
           votes,
         },
       });
@@ -116,8 +112,9 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
   }, [selectedMember, votes, registerMutation, projectId, meetingId]);
 
   // 안건별 투표 입력 렌더링
-  const renderAgendaVote = (agenda: Agenda) => {
-    const currentVote = votes.find((v) => v.agenda_id === agenda.id);
+  const renderAgendaVote = (agenda: Agenda, index: number) => {
+    const currentVote = votes.find((v) => v.conference_agenda_id === agenda.id);
+    const answers = agenda.answers || ['찬성', '반대', '기권'];
 
     return (
       <Paper
@@ -130,50 +127,26 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
         }}
       >
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          제{agenda.order}호 안건
+          제{index + 1}호 안건
         </Typography>
         <Typography variant="body1" fontWeight={500} sx={{ mb: 2 }}>
-          {agenda.title}
+          {agenda.name}
         </Typography>
 
-        {agenda.vote_type === 'approval' ? (
-          <RadioGroup
-            row
-            value={currentVote?.choice || ''}
-            onChange={(e) => handleVoteChange(agenda.id, e.target.value as VoteChoice)}
-          >
+        <RadioGroup
+          row
+          value={currentVote?.answer || ''}
+          onChange={(e) => handleVoteChange(agenda.id, e.target.value)}
+        >
+          {answers.map((answer) => (
             <FormControlLabel
-              value="agree"
-              control={<Radio color="success" />}
-              label="찬성"
-            />
-            <FormControlLabel
-              value="disagree"
-              control={<Radio color="error" />}
-              label="반대"
-            />
-            <FormControlLabel
-              value="abstain"
+              key={answer}
+              value={answer}
               control={<Radio />}
-              label="기권"
+              label={answer}
             />
-          </RadioGroup>
-        ) : (
-          <FormControl fullWidth size="small">
-            <InputLabel>선택</InputLabel>
-            <Select
-              value={currentVote?.choice || ''}
-              label="선택"
-              onChange={(e) => handleVoteChange(agenda.id, Number(e.target.value))}
-            >
-              {agenda.options?.map((option) => (
-                <MenuItem key={option.id} value={option.id}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+          ))}
+        </RadioGroup>
       </Paper>
     );
   };
@@ -239,7 +212,7 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
                   동/호: {selectedMember.dong} {selectedMember.ho}
                 </Typography>
                 <Typography variant="body2">
-                  평형: {selectedMember.unit_type || '-'}
+                  타입: {selectedMember.type || '-'}
                 </Typography>
               </Box>
             </Paper>
@@ -252,7 +225,7 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
             </Typography>
 
             {agendas && agendas.length > 0 ? (
-              agendas.map(renderAgendaVote)
+              agendas.map((agenda, index) => renderAgendaVote(agenda, index))
             ) : (
               <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
                 등록된 안건이 없습니다.

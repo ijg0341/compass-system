@@ -19,8 +19,8 @@ import {
 } from '@mui/material';
 import { Download as DownloadIcon } from '@mui/icons-material';
 import { useState } from 'react';
-import { useAgendas, useMeetingStats } from '@/src/hooks/useVote';
-import type { Agenda, AgendaVoteResult } from '@/src/types/vote.types';
+import { useAgendaStatus, useMeetingStats } from '@/src/hooks/useVote';
+import type { AgendaWithVotes, VoteResult } from '@/src/lib/api/voteApi';
 
 interface AgendaStatusProps {
   projectId: number;
@@ -28,86 +28,62 @@ interface AgendaStatusProps {
   meetingDate?: string;
 }
 
-// 투표 결과 포맷팅 (찬반형)
-function formatApprovalResult(result: AgendaVoteResult | undefined): string {
-  if (!result) return '-';
-  return `찬성 ${result.agree}표\n반대 ${result.disagree}표\n기권 ${result.abstain}표`;
-}
-
-// 투표 결과 포맷팅 (선택형)
-function formatSelectionResult(
-  result: AgendaVoteResult | undefined,
-  options: { id: number; label: string }[] | undefined
+// 투표 결과 포맷팅 - 서버에서 answers 키 기반으로 카운트된 결과 사용
+function formatVoteResult(
+  result: Record<string, number> | undefined,
+  answers: string[] | undefined
 ): string {
-  if (!result || !options || !result.option_votes) return '-';
+  if (!result || !answers) return '-';
 
-  return options
-    .map((opt) => `${opt.label} ${result.option_votes?.[opt.id] || 0}표`)
-    .concat([`기권 ${result.abstain}표`])
-    .join('\n');
+  return answers.map((answer) => `${answer} ${result[answer] || 0}표`).join('\n');
 }
 
 // 최종 결과 계산
-function getFinalResult(agenda: Agenda): string {
-  if (agenda.final_result) {
-    if (agenda.final_result === 'passed') return '가결';
-    if (agenda.final_result === 'rejected') return '부결';
-    return agenda.final_result;
-  }
+function getFinalResult(agenda: AgendaWithVotes): string {
+  const electronic = agenda.electronic_result || {};
+  const paper = agenda.paper_result || {};
+  const answers = agenda.answers || [];
 
-  // 찬반형일 경우 찬성이 반대보다 많으면 가결
-  if (agenda.vote_type === 'approval') {
-    const electronic = agenda.electronic_result;
-    const paper = agenda.paper_result;
+  if (answers.length === 0) return '-';
 
-    const totalAgree = (electronic?.agree || 0) + (paper?.agree || 0);
-    const totalDisagree = (electronic?.disagree || 0) + (paper?.disagree || 0);
+  // 각 answer별 총 투표수 계산
+  const totals: Record<string, number> = {};
+  answers.forEach((answer) => {
+    totals[answer] = (electronic[answer] || 0) + (paper[answer] || 0);
+  });
 
-    if (totalAgree > totalDisagree) return '가결';
-    if (totalAgree < totalDisagree) return '부결';
+  // is_yes_or_no가 true면 첫 번째(찬성) vs 두 번째(반대) 비교하여 가결/부결
+  if (agenda.is_yes_or_no && answers.length >= 2) {
+    const agreeCount = totals[answers[0]] || 0;
+    const disagreeCount = totals[answers[1]] || 0;
+
+    if (agreeCount > disagreeCount) return '가결';
+    if (agreeCount < disagreeCount) return '부결';
     return '-';
   }
 
-  // 선택형일 경우 최다득표 옵션
-  if (agenda.vote_type === 'selection' && agenda.options) {
-    const electronic = agenda.electronic_result?.option_votes || {};
-    const paper = agenda.paper_result?.option_votes || {};
+  // is_yes_or_no가 false면 최다 득표 answer 반환
+  let maxAnswer = '-';
+  let maxCount = 0;
+  answers.forEach((answer) => {
+    if (totals[answer] > maxCount) {
+      maxCount = totals[answer];
+      maxAnswer = answer;
+    }
+  });
 
-    let maxVotes = 0;
-    let maxLabel = '-';
-
-    agenda.options.forEach((opt) => {
-      const total = (electronic[opt.id] || 0) + (paper[opt.id] || 0);
-      if (total > maxVotes) {
-        maxVotes = total;
-        maxLabel = opt.label;
-      }
-    });
-
-    return maxLabel;
-  }
-
-  return '-';
+  return maxCount > 0 ? maxAnswer : '-';
 }
 
 // 출석 조합원수 계산
-function getAttendanceCount(agenda: Agenda): number {
-  const electronic = agenda.electronic_result;
-  const paper = agenda.paper_result;
-
-  const electronicTotal = electronic
-    ? electronic.agree + electronic.disagree + electronic.abstain
-    : 0;
-  const paperTotal = paper
-    ? paper.agree + paper.disagree + paper.abstain
-    : 0;
-
-  return agenda.attendance_count || electronicTotal + paperTotal;
+function getAttendanceCount(agenda: AgendaWithVotes): number {
+  return agenda.attendance_count || 0;
 }
 
 export default function AgendaStatus({ projectId, meetingId, meetingDate }: AgendaStatusProps) {
-  const { data: agendas, isLoading } = useAgendas(projectId, meetingId);
+  const { data: agendaStatusData, isLoading } = useAgendaStatus(projectId, meetingId);
   const { data: stats } = useMeetingStats(projectId, meetingId);
+  const agendas = agendaStatusData?.agendas;
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -240,7 +216,6 @@ export default function AgendaStatus({ projectId, meetingId, meetingDate }: Agen
                 </TableRow>
               ) : (
                 agendas.map((agenda) => {
-                  const isApproval = agenda.vote_type === 'approval';
                   const finalResult = getFinalResult(agenda);
                   const resultColor =
                     finalResult === '가결'
@@ -264,9 +239,7 @@ export default function AgendaStatus({ projectId, meetingId, meetingDate }: Agen
                           variant="body2"
                           sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}
                         >
-                          {isApproval
-                            ? formatApprovalResult(agenda.electronic_result)
-                            : formatSelectionResult(agenda.electronic_result, agenda.options)}
+                          {formatVoteResult(agenda.electronic_result, agenda.answers)}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -274,9 +247,7 @@ export default function AgendaStatus({ projectId, meetingId, meetingDate }: Agen
                           variant="body2"
                           sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}
                         >
-                          {isApproval
-                            ? formatApprovalResult(agenda.paper_result)
-                            : formatSelectionResult(agenda.paper_result, agenda.options)}
+                          {formatVoteResult(agenda.paper_result, agenda.answers)}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">

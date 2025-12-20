@@ -21,6 +21,7 @@ import {
   exportVoteMembers,
   // 안건
   getAgendas,
+  getAgendaStatus,
   createAgenda,
   updateAgenda,
   deleteAgenda,
@@ -66,6 +67,8 @@ export const voteKeys = {
   // 안건
   agendas: (projectId: number, meetingId: number) =>
     [...voteKeys.all, 'agendas', projectId, meetingId] as const,
+  agendaStatus: (projectId: number, meetingId: number) =>
+    [...voteKeys.all, 'agendaStatus', projectId, meetingId] as const,
 
   // 투표 내역
   voteRecords: (projectId: number, meetingId: number, params?: VoteRecordListParams) =>
@@ -324,6 +327,18 @@ export function useAgendas(projectId: number, meetingId: number) {
     queryFn: () => getAgendas(projectId, meetingId),
     enabled: !!projectId && !!meetingId,
     staleTime: 1000 * 60 * 5, // 5분
+  });
+}
+
+/**
+ * 안건 현황 조회 (투표 집계 포함)
+ */
+export function useAgendaStatus(projectId: number, meetingId: number) {
+  return useQuery({
+    queryKey: voteKeys.agendaStatus(projectId, meetingId),
+    queryFn: () => getAgendaStatus(projectId, meetingId),
+    enabled: !!projectId && !!meetingId,
+    staleTime: 1000 * 60 * 1, // 1분
   });
 }
 

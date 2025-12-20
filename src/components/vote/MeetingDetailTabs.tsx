@@ -27,7 +27,7 @@ export default function MeetingDetailTabs({ meeting, projectId, currentTab }: Me
         <AgendaStatus
           projectId={projectId}
           meetingId={meeting.id}
-          meetingDate={meeting.meeting_date}
+          meetingDate={meeting.conference_date}
         />
       )}
 

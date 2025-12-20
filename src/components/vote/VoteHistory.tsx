@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { Download as DownloadIcon } from '@mui/icons-material';
 import { useVoteRecords, useExportVoteRecords } from '@/src/hooks/useVote';
-import type { VoteRecord, AttendanceType } from '@/src/types/vote.types';
+import type { VoteRecord } from '@/src/types/vote.types';
 import PaperVoteModal from './PaperVoteModal';
 
 interface VoteHistoryProps {
@@ -29,10 +29,11 @@ interface VoteHistoryProps {
   meetingId: number;
 }
 
-// 현장참석 라벨
-const attendanceLabels: Record<AttendanceType, string> = {
+// 현장참석 라벨 (향후 확장)
+const attendanceLabels: Record<string, string> = {
   self: '본인',
   proxy: '대리인',
+  '-': '-',
 };
 
 export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) {
@@ -222,7 +223,9 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
                       {record.pre_voted ? 'O' : ''}
                     </TableCell>
                     <TableCell align="center">
-                      {record.attendance_type ? attendanceLabels[record.attendance_type] : ''}
+                      {record.attendance_type && record.attendance_type !== '-'
+                        ? attendanceLabels[record.attendance_type] || record.attendance_type
+                        : '-'}
                     </TableCell>
                     <TableCell align="center">{getVoteMethodText(record)}</TableCell>
                     <TableCell align="center">{renderManageButton(record)}</TableCell>
@@ -266,6 +269,8 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
           }}
           isEditMode={isEditMode}
           existingVotes={selectedRecord.votes}
+          existingVoteDate={selectedRecord.vote_date}
+          existingVoteDocument={selectedRecord.vote_document}
         />
       )}
 

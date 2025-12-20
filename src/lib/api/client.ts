@@ -80,6 +80,10 @@ class ApiClient {
     // Response 인터셉터 - 에러 핸들링
     this.axiosInstance.interceptors.response.use(
       (response) => {
+        // blob 응답은 코드 체크 건너뛰기
+        if (response.config.responseType === 'blob') {
+          return response;
+        }
         // code가 0이 아니면 에러로 처리
         if (response.data && response.data.code !== 0) {
           return Promise.reject({
