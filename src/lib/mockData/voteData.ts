@@ -309,6 +309,31 @@ export const mockVoteRecords: VoteRecord[] = [
     ],
     signature_url: 'https://example.com/signatures/3.png',
   },
+  // 투표하지 않은 조합원 - 서면투표 등록 버튼 표시용
+  {
+    id: 4,
+    member_id: 3,
+    member_no: 'M003',
+    member_name: '박민수',
+    phone: '010-3456-7890',
+    birth_date: '1985-11-08',
+    dong: '102동',
+    ho: '801호',
+    unit_type: '84A',
+    pre_voted: false,
+  },
+  {
+    id: 5,
+    member_id: 5,
+    member_no: 'M005',
+    member_name: '최동훈',
+    phone: '010-5678-9012',
+    birth_date: '1978-05-12',
+    dong: '103동',
+    ho: '501호',
+    unit_type: '84B',
+    pre_voted: false,
+  },
 ];
 
 // =============================================================================

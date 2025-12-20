@@ -7,12 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Button,
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
-import { MeetingTable, MeetingFilters, type MeetingFilter } from '@/src/components/vote';
+import { MeetingTable } from '@/src/components/vote';
 import { useMeetings } from '@/src/hooks/useVote';
 import type { Meeting } from '@/src/types/vote.types';
 
@@ -26,12 +24,8 @@ export default function VoteMeetingListPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // 필터
-  const [filters, setFilters] = useState<MeetingFilter>({});
-
   // API 훅
   const { data: meetingsData, isLoading, error } = useMeetings(PROJECT_ID, {
-    ...filters,
     offset: page * rowsPerPage,
     limit: rowsPerPage,
   });
@@ -63,12 +57,6 @@ export default function VoteMeetingListPage() {
     [navigate]
   );
 
-  // 필터 변경
-  const handleFiltersChange = useCallback((newFilters: MeetingFilter) => {
-    setFilters(newFilters);
-    setPage(0);
-  }, []);
-
   return (
     <>
       <Box>
@@ -83,19 +71,12 @@ export default function VoteMeetingListPage() {
         >
           <Box>
             <Typography variant="h4" fontWeight={700}>
-              전자투표 관리
+              총회 목록
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               총 {total}건
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/smartnet/vote/create')}
-          >
-            전자투표 생성
-          </Button>
         </Box>
 
         {/* 에러 표시 */}
@@ -104,9 +85,6 @@ export default function VoteMeetingListPage() {
             데이터를 불러오는데 실패했습니다.
           </Alert>
         )}
-
-        {/* 필터 */}
-        <MeetingFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
         {/* 로딩 */}
         {isLoading ? (

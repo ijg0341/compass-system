@@ -107,15 +107,24 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
     }
   };
 
-  // 투표 버튼 렌더링
-  const renderVoteButton = (record: VoteRecord) => {
+  // 투표방식 텍스트 렌더링
+  const getVoteMethodText = (record: VoteRecord): string => {
+    if (!record.vote_method) return '-';
+    if (record.vote_method === 'paper') return '서면';
+    if (record.vote_method === 'electronic') return '전자';
+    return '-';
+  };
+
+  // 관리 버튼 렌더링
+  const renderManageButton = (record: VoteRecord) => {
     // 투표하지 않은 경우: 서면투표 등록 버튼
     if (!record.vote_method) {
       return (
         <Button
           size="small"
-          variant="contained"
+          variant="outlined"
           onClick={() => handlePaperVoteRegister(record)}
+          sx={{ py: 0.25, px: 1, fontSize: '0.75rem', minWidth: 'auto' }}
         >
           서면투표 등록
         </Button>
@@ -129,14 +138,15 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
           size="small"
           variant="outlined"
           onClick={() => handlePaperVoteEdit(record)}
+          sx={{ py: 0.25, px: 1, fontSize: '0.75rem', minWidth: 'auto' }}
         >
           서면투표 수정
         </Button>
       );
     }
 
-    // 전자투표한 경우: 투표방식만 표시
-    return <Typography variant="body2">전자</Typography>;
+    // 전자투표한 경우: 버튼 없음
+    return null;
   };
 
   return (
@@ -166,33 +176,36 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, width: 80 }}>가입번호</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 60 }}>동</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 60 }}>호</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 60 }}>타입</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>성명</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 110 }}>생년월일</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 80 }} align="center">
+                <TableCell sx={{ fontWeight: 600, width: 90, whiteSpace: 'nowrap' }}>가입번호</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }}>동</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }}>호</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }}>타입</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 100, whiteSpace: 'nowrap' }}>성명</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 110, whiteSpace: 'nowrap' }}>생년월일</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }} align="center">
                   사전투표
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 80 }} align="center">
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }} align="center">
                   현장참석
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 130 }} align="center">
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }} align="center">
                   투표방식
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 130, whiteSpace: 'nowrap' }} align="center">
+                  관리
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
               ) : records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">투표 내역이 없습니다.</Typography>
                   </TableCell>
                 </TableRow>
@@ -211,7 +224,8 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
                     <TableCell align="center">
                       {record.attendance_type ? attendanceLabels[record.attendance_type] : ''}
                     </TableCell>
-                    <TableCell align="center">{renderVoteButton(record)}</TableCell>
+                    <TableCell align="center">{getVoteMethodText(record)}</TableCell>
+                    <TableCell align="center">{renderManageButton(record)}</TableCell>
                   </TableRow>
                 ))
               )}

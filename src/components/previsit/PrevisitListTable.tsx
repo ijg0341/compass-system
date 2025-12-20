@@ -8,16 +8,10 @@ import {
   TableHead,
   TableRow,
   Typography,
-  IconButton,
-  Tooltip,
+  Button,
   Stack,
   Chip,
 } from '@mui/material';
-import {
-  Visibility as ViewIcon,
-  ContentCopy as CopyIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
 import dayjs from 'dayjs';
 import type { Previsit } from '@/src/types/previsit.types';
 
@@ -109,21 +103,31 @@ export default function PrevisitListTable({
                   <TableCell>{previsit.max_limit || '-'}명</TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={0.5} justifyContent="center">
-                      <Tooltip title="조회">
-                        <IconButton size="small" onClick={() => onView(previsit)}>
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="URL 복사">
-                        <IconButton size="small" onClick={() => onCopyUrl(previsit)}>
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="삭제">
-                        <IconButton size="small" color="error" onClick={() => onDelete(previsit)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => onView(previsit)}
+                        sx={{ minWidth: 'auto', px: 1, py: 0.25, fontSize: '0.75rem' }}
+                      >
+                        조회
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => onCopyUrl(previsit)}
+                        sx={{ minWidth: 'auto', px: 1, py: 0.25, fontSize: '0.75rem' }}
+                      >
+                        URL복사
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="error"
+                        onClick={() => onDelete(previsit)}
+                        sx={{ minWidth: 'auto', px: 1, py: 0.25, fontSize: '0.75rem' }}
+                      >
+                        삭제
+                      </Button>
                     </Stack>
                   </TableCell>
                 </TableRow>

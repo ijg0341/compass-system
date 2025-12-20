@@ -1,13 +1,10 @@
 /**
- * 서면투표 등록/수정 모달
+ * 서면투표 등록/수정 Drawer
  * 화면 ID: CP-SA-09-005
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Drawer,
   Box,
   Typography,
   TextField,
@@ -314,82 +311,130 @@ export default function PaperVoteModal({
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6" fontWeight={600}>
-          서면투표 {isEditMode ? '수정' : '등록'}
-        </Typography>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+  // Drawer가 열릴 때 Lenis 스크롤 중지
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const lenis = (window as { lenis?: { stop: () => void; start: () => void } }).lenis;
+      if (open && lenis) {
+        lenis.stop();
+      } else if (!open && lenis) {
+        lenis.start();
+      }
+    }
+  }, [open]);
 
-      <DialogContent dividers>
-        {isAgendasLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box>
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      disableScrollLock={false}
+      ModalProps={{
+        keepMounted: false,
+      }}
+      sx={{
+        zIndex: 1300,
+      }}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: '85%', md: '700px' },
+          maxWidth: '700px',
+          background: '#1a1a1a',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+      }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* 헤더 */}
+        <Box
+          sx={{
+            p: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="h6" fontWeight={600}>
+            서면투표 {isEditMode ? '수정' : '등록'}
+          </Typography>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* 본문 */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: 'auto',
+            p: 3,
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(255, 255, 255, 0.05)',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.3)',
+              },
+            },
+          }}
+          onWheel={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {isAgendasLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box>
             {/* 조합원 정보 */}
-            <Box
+            <Table
+              size="small"
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 2,
                 mb: 3,
-                p: 2,
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: 1,
+                tableLayout: 'fixed',
+                '& td, & th': { border: '1px solid rgba(255,255,255,0.15)', py: 1, px: 1.5 },
+                '& th': { whiteSpace: 'nowrap', width: '15%', bgcolor: 'rgba(255,255,255,0.03)', fontWeight: 600 },
+                '& td': { width: '35%' },
               }}
             >
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  조합원 성명
-                </Typography>
-                <Typography variant="body1" fontWeight={500}>
-                  {memberInfo.name}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  생년월일
-                </Typography>
-                <Typography variant="body1">{memberInfo.birth_date}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  동/호
-                </Typography>
-                <Typography variant="body1">
-                  {memberInfo.dong || '-'}동 {memberInfo.ho || '-'}호
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  연락처
-                </Typography>
-                <Typography variant="body1">{memberInfo.phone}</Typography>
-              </Box>
-            </Box>
-
-            {/* 서면결의 날짜 */}
-            <Box sx={{ mb: 3 }}>
-              <TextField
-                label="서면결의 날짜"
-                type="date"
-                size="small"
-                required
-                value={paperVoteDate}
-                onChange={(e) => {
-                  setPaperVoteDate(e.target.value);
-                  setError(null);
-                }}
-                InputLabelProps={{ shrink: true }}
-                sx={{ width: 200 }}
-              />
-            </Box>
+              <TableBody>
+                <TableRow>
+                  <TableCell component="th">조합원 성명</TableCell>
+                  <TableCell>{memberInfo.name}</TableCell>
+                  <TableCell component="th">생년월일</TableCell>
+                  <TableCell>{memberInfo.birth_date}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th">동/호</TableCell>
+                  <TableCell>{memberInfo.dong || '-'} / {memberInfo.ho || '-'}</TableCell>
+                  <TableCell component="th">연락처</TableCell>
+                  <TableCell>{memberInfo.phone}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th">서면결의 날짜 *</TableCell>
+                  <TableCell colSpan={3}>
+                    <TextField
+                      type="date"
+                      size="small"
+                      value={paperVoteDate}
+                      onChange={(e) => {
+                        setPaperVoteDate(e.target.value);
+                        setError(null);
+                      }}
+                      sx={{ width: 200 }}
+                    />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
 
             {/* 첨부파일 */}
             <Box sx={{ mb: 3 }}>
@@ -495,25 +540,36 @@ export default function PaperVoteModal({
             )}
           </Box>
         )}
-      </DialogContent>
+        </Box>
 
-      <DialogActions>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={registerMutation.isPending || updateMutation.isPending}
-          startIcon={
-            (registerMutation.isPending || updateMutation.isPending) && (
-              <CircularProgress size={16} />
-            )
-          }
+        {/* 푸터 */}
+        <Box
+          sx={{
+            p: 2,
+            borderTop: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 1,
+          }}
         >
-          {isEditMode ? '수정' : '등록'}
-        </Button>
-        <Button variant="outlined" onClick={onClose}>
-          취소
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={registerMutation.isPending || updateMutation.isPending}
+            startIcon={
+              (registerMutation.isPending || updateMutation.isPending) && (
+                <CircularProgress size={16} />
+              )
+            }
+          >
+            {isEditMode ? '수정' : '등록'}
+          </Button>
+          <Button variant="outlined" onClick={onClose}>
+            취소
+          </Button>
+        </Box>
+      </Box>
+    </Drawer>
   );
 }

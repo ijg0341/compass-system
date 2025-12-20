@@ -214,7 +214,7 @@ export default function AgendaStatus({ projectId, meetingId, meetingDate }: Agen
         }}
       >
         <TableContainer>
-          <Table>
+          <Table sx={{ '& tbody tr': { minHeight: 80, height: 80 }, '& tbody td': { verticalAlign: 'top', py: 1.5 } }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600, width: 80 }}>구분</TableCell>

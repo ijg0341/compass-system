@@ -116,7 +116,7 @@ const menuItems: NavItem[] = [
     icon: HowToVote,
     path: '/vote',
     subMenu: [
-      { text: '총회 관리', path: '/vote/meetings' },
+      { text: '총회 목록', path: '/vote/meetings' },
     ]
   },
   {

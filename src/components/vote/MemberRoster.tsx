@@ -25,12 +25,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  FormLabel,
   RadioGroup,
   FormControlLabel,
   Radio,
-  Stack,
 } from '@mui/material';
 import {
   Upload as UploadIcon,
@@ -283,14 +280,14 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
       {/* 입력 폼 */}
       <Paper
         sx={{
-          p: 3,
+          p: 2,
           mb: 2,
           background: 'rgba(26, 26, 26, 0.5)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
         {/* 엑셀 등록 버튼 */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -309,100 +306,146 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
           </Button>
         </Box>
 
-        {/* 폼 필드 */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 2,
-          }}
-        >
-          <TextField
-            size="small"
-            label="가입번호"
-            value={formData.member_no}
-            onChange={(e) => handleInputChange('member_no', e.target.value)}
-            placeholder="미입력시 자동 생성"
-          />
-          <TextField
-            size="small"
-            label="동"
-            value={formData.dong}
-            onChange={(e) => handleInputChange('dong', e.target.value)}
-          />
-          <TextField
-            size="small"
-            label="호"
-            value={formData.ho}
-            onChange={(e) => handleInputChange('ho', e.target.value)}
-          />
-          <TextField
-            size="small"
-            label="타입"
-            value={formData.unit_type}
-            onChange={(e) => handleInputChange('unit_type', e.target.value)}
-          />
-          <TextField
-            size="small"
-            label="생년월일"
-            type="date"
-            value={formData.birth_date}
-            onChange={(e) => handleInputChange('birth_date', e.target.value)}
-            error={!!formErrors.birth_date}
-            required
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            size="small"
-            label="성명"
-            value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            error={!!formErrors.name}
-            required
-          />
-          <TextField
-            size="small"
-            label="연락처"
-            value={formData.phone}
-            onChange={(e) => handleInputChange('phone', e.target.value)}
-            error={!!formErrors.phone}
-            required
-          />
-          <TextField
-            size="small"
-            label="재투표 회수"
-            type="number"
-            value={formData.revote_count}
-            onChange={(e) => handleInputChange('revote_count', parseInt(e.target.value) || 0)}
-            inputProps={{ min: 0 }}
-          />
-        </Box>
+        {/* 테이블 형태 폼 */}
+        <Table size="small" sx={{
+          tableLayout: 'fixed',
+          '& td, & th': { border: '1px solid rgba(255,255,255,0.15)', py: 1, px: 1.5 },
+          '& th': { whiteSpace: 'nowrap', width: '15%', bgcolor: 'rgba(255,255,255,0.03)', fontWeight: 600 },
+          '& td': { width: '35%' },
+        }}>
+          <TableBody>
+            {/* 1행: 가입번호, 동 */}
+            <TableRow>
+              <TableCell component="th">가입번호</TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.member_no}
+                  onChange={(e) => handleInputChange('member_no', e.target.value)}
+                  placeholder="자동생성"
+                />
+              </TableCell>
+              <TableCell component="th">동</TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.dong}
+                  onChange={(e) => handleInputChange('dong', e.target.value)}
+                />
+              </TableCell>
+            </TableRow>
 
-        {/* 사전투표의향 */}
-        <FormControl component="fieldset" sx={{ mt: 2 }}>
-          <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>사전투표의향</FormLabel>
-          <RadioGroup
-            row
-            value={formData.pre_vote_intention}
-            onChange={(e) => handleInputChange('pre_vote_intention', e.target.value)}
-          >
-            <FormControlLabel value="planned" control={<Radio size="small" />} label="예정" />
-            <FormControlLabel value="undecided" control={<Radio size="small" />} label="미정" />
-            <FormControlLabel value="impossible" control={<Radio size="small" />} label="불가" />
-            <FormControlLabel value="other" control={<Radio size="small" />} label="기타" />
-          </RadioGroup>
-        </FormControl>
+            {/* 2행: 호, 타입 */}
+            <TableRow>
+              <TableCell component="th">호</TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.ho}
+                  onChange={(e) => handleInputChange('ho', e.target.value)}
+                />
+              </TableCell>
+              <TableCell component="th">타입</TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.unit_type}
+                  onChange={(e) => handleInputChange('unit_type', e.target.value)}
+                />
+              </TableCell>
+            </TableRow>
+
+            {/* 3행: 생년월일, 성명 */}
+            <TableRow>
+              <TableCell component="th">
+                생년월일 <Typography component="span" color="error">*</Typography>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  type="date"
+                  value={formData.birth_date}
+                  onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                  error={!!formErrors.birth_date}
+                />
+              </TableCell>
+              <TableCell component="th">
+                성명 <Typography component="span" color="error">*</Typography>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  error={!!formErrors.name}
+                />
+              </TableCell>
+            </TableRow>
+
+            {/* 4행: 연락처, 재투표 회수 */}
+            <TableRow>
+              <TableCell component="th">
+                연락처 <Typography component="span" color="error">*</Typography>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  error={!!formErrors.phone}
+                />
+              </TableCell>
+              <TableCell component="th">재투표 회수</TableCell>
+              <TableCell>
+                <TextField
+                  size="small"
+                  fullWidth
+                  type="number"
+                  value={formData.revote_count}
+                  onChange={(e) => handleInputChange('revote_count', parseInt(e.target.value) || 0)}
+                  inputProps={{ min: 0 }}
+                />
+              </TableCell>
+            </TableRow>
+
+            {/* 5행: 사전투표의향 */}
+            <TableRow>
+              <TableCell component="th">사전투표의향</TableCell>
+              <TableCell colSpan={3}>
+                <RadioGroup
+                  row
+                  value={formData.pre_vote_intention}
+                  onChange={(e) => handleInputChange('pre_vote_intention', e.target.value)}
+                  sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
+                >
+                  <FormControlLabel value="planned" control={<Radio size="small" />} label="예정" />
+                  <FormControlLabel value="undecided" control={<Radio size="small" />} label="미정" />
+                  <FormControlLabel value="impossible" control={<Radio size="small" />} label="불가" />
+                  <FormControlLabel value="other" control={<Radio size="small" />} label="기타" />
+                </RadioGroup>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
         {/* 버튼 */}
-        <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
+        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <Button
             variant="contained"
+            size="small"
             onClick={handleSubmit}
             disabled={createMutation.isPending || updateMutation.isPending}
           >
             {editingId ? '수정하기' : '등록하기'}
           </Button>
-          <Button variant="outlined" onClick={handleCancel}>
+          <Button variant="outlined" size="small" onClick={handleCancel}>
             취소
           </Button>
         </Box>
