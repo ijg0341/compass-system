@@ -28,6 +28,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useAgendas, useRegisterPaperVote, useUpdatePaperVote } from '@/src/hooks/useVote';
+import { uploadFile, type FileUploadResponse } from '@/src/lib/api/reservationApi';
 import type { Agenda, AgendaVote } from '@/src/types/vote.types';
 
 interface PaperVoteModalProps {
@@ -58,7 +59,11 @@ interface VoteSelection {
 interface UploadedFile {
   name: string;
   size: number;
-  file: File;
+  file?: File;
+  url?: string; // 기존 업로드된 파일 URL
+  uploaded?: FileUploadResponse; // 업로드 완료 시 응답 저장
+  uploading?: boolean; // 업로드 중 상태
+  isExisting?: boolean; // 기존 파일 여부
 }
 
 export default function PaperVoteModal({
@@ -100,9 +105,11 @@ export default function PaperVoteModal({
         setVotes(
           agendas.map((agenda) => {
             const existing = existingVotes.find((v) => v.agenda_id === agenda.id);
+            // answer 또는 choice 필드 확인
+            const existingChoice = existing?.answer || (existing as { choice?: string })?.choice || null;
             return {
               agenda_id: agenda.id,
-              choice: existing?.answer || null,
+              choice: existingChoice,
             };
           })
         );
@@ -125,8 +132,43 @@ export default function PaperVoteModal({
       if (existingVoteDate) {
         setPaperVoteDate(existingVoteDate);
       }
-      // 첨부파일은 현재 서버에서 파일 정보만 저장되므로 표시만 함
-      // 실제 파일 객체는 다시 업로드 필요
+      // 기존 첨부파일 로드
+      if (existingVoteDocument) {
+        const existingFiles: UploadedFile[] = [];
+
+        // URL 추출 함수
+        const extractUrls = (obj: unknown): void => {
+          if (!obj) return;
+          if (typeof obj === 'string') {
+            if (obj.startsWith('http://') || obj.startsWith('https://')) {
+              existingFiles.push({
+                name: obj.split('/').pop() || '제출서류',
+                size: 0,
+                url: obj,
+                isExisting: true,
+              });
+            } else {
+              try {
+                const parsed = JSON.parse(obj);
+                extractUrls(parsed);
+              } catch {
+                // 일반 문자열
+              }
+            }
+            return;
+          }
+          if (Array.isArray(obj)) {
+            obj.forEach((item) => extractUrls(item));
+            return;
+          }
+          if (typeof obj === 'object' && obj !== null) {
+            Object.values(obj).forEach((value) => extractUrls(value));
+          }
+        };
+
+        extractUrls(existingVoteDocument);
+        setFiles(existingFiles);
+      }
     } else {
       // 등록 모드: 초기화
       setPaperVoteDate('');
@@ -142,32 +184,55 @@ export default function PaperVoteModal({
     setError(null);
   }, []);
 
-  // 파일 업로드
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // 파일 업로드 (S3로 즉시 업로드)
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files;
     if (!uploadedFiles) return;
 
-    const newFiles: UploadedFile[] = [];
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
-    Array.from(uploadedFiles).forEach((file) => {
+    for (const file of Array.from(uploadedFiles)) {
       if (!allowedTypes.includes(file.type)) {
         setError('jpg, gif, png 파일만 업로드 가능합니다.');
-        return;
+        continue;
       }
       if (file.size > maxSize) {
         setError('파일 크기는 최대 10MB입니다.');
-        return;
+        continue;
       }
-      newFiles.push({
+
+      // 파일 목록에 추가 (업로드 중 상태)
+      const newFile: UploadedFile = {
         name: file.name,
         size: file.size,
         file,
-      });
-    });
+        uploading: true,
+      };
+      setFiles((prev) => [...prev, newFile]);
 
-    setFiles((prev) => [...prev, ...newFiles]);
+      try {
+        // S3 업로드
+        const response = await uploadFile(file, {
+          entityType: 'conference_voter',
+          fileCategory: 'vote_document',
+        });
+
+        // 업로드 완료 상태로 업데이트
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.name === file.name && f.uploading
+              ? { ...f, uploading: false, uploaded: response }
+              : f
+          )
+        );
+      } catch {
+        // 업로드 실패 시 목록에서 제거
+        setFiles((prev) => prev.filter((f) => !(f.name === file.name && f.uploading)));
+        setError(`${file.name} 업로드에 실패했습니다.`);
+      }
+    }
+
     e.target.value = '';
   }, []);
 
@@ -181,32 +246,54 @@ export default function PaperVoteModal({
     e.preventDefault();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const droppedFiles = e.dataTransfer.files;
     if (!droppedFiles) return;
 
-    const newFiles: UploadedFile[] = [];
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     const maxSize = 10 * 1024 * 1024;
 
-    Array.from(droppedFiles).forEach((file) => {
+    for (const file of Array.from(droppedFiles)) {
       if (!allowedTypes.includes(file.type)) {
         setError('jpg, gif, png 파일만 업로드 가능합니다.');
-        return;
+        continue;
       }
       if (file.size > maxSize) {
         setError('파일 크기는 최대 10MB입니다.');
-        return;
+        continue;
       }
-      newFiles.push({
+
+      // 파일 목록에 추가 (업로드 중 상태)
+      const newFile: UploadedFile = {
         name: file.name,
         size: file.size,
         file,
-      });
-    });
+        uploading: true,
+      };
+      setFiles((prev) => [...prev, newFile]);
 
-    setFiles((prev) => [...prev, ...newFiles]);
+      try {
+        // S3 업로드
+        const response = await uploadFile(file, {
+          entityType: 'conference_voter',
+          fileCategory: 'vote_document',
+        });
+
+        // 업로드 완료 상태로 업데이트
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.name === file.name && f.uploading
+              ? { ...f, uploading: false, uploaded: response }
+              : f
+          )
+        );
+      } catch {
+        // 업로드 실패 시 목록에서 제거
+        setFiles((prev) => prev.filter((f) => !(f.name === file.name && f.uploading)));
+        setError(`${file.name} 업로드에 실패했습니다.`);
+      }
+    }
   }, []);
 
   // 유효성 검사
@@ -230,6 +317,13 @@ export default function PaperVoteModal({
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
 
+    // 업로드 중인 파일이 있는지 확인
+    const uploadingFiles = files.filter((f) => f.uploading);
+    if (uploadingFiles.length > 0) {
+      setError('파일 업로드가 완료될 때까지 기다려주세요.');
+      return;
+    }
+
     try {
       // choice가 이미 서버 값("찬성", "반대" 등)이므로 그대로 사용
       const voteData = votes
@@ -238,6 +332,32 @@ export default function PaperVoteModal({
           conference_agenda_id: v.agenda_id,
           answer: String(v.choice),
         }));
+
+      // 파일 URL 목록 구성 (기존 파일 + 새로 업로드된 파일)
+      const allFileUrls: string[] = [];
+
+      files.forEach((f) => {
+        if (f.isExisting && f.url) {
+          // 기존 파일
+          allFileUrls.push(f.url);
+        } else if (f.uploaded) {
+          // 새로 업로드된 파일
+          allFileUrls.push(f.uploaded.url);
+        }
+      });
+
+      let voteDocumentData: string | undefined;
+
+      if (allFileUrls.length === 1) {
+        voteDocumentData = JSON.stringify({ document_url: allFileUrls[0] });
+      } else if (allFileUrls.length > 1) {
+        const documentObj: Record<string, string> = {};
+        allFileUrls.forEach((url, index) => {
+          const key = index === 0 ? 'document_url' : `document_url${index + 1}`;
+          documentObj[key] = url;
+        });
+        voteDocumentData = JSON.stringify(documentObj);
+      }
 
       if (isEditMode) {
         await updateMutation.mutateAsync({
@@ -248,7 +368,7 @@ export default function PaperVoteModal({
             conference_voter_id: memberId,
             vote_date: paperVoteDate,
             votes: voteData,
-            vote_document: files.length > 0 ? JSON.stringify(files.map((f) => f.name)) : undefined,
+            vote_document: voteDocumentData,
           },
         });
       } else {
@@ -259,7 +379,7 @@ export default function PaperVoteModal({
             conference_voter_id: memberId,
             vote_date: paperVoteDate,
             votes: voteData,
-            vote_document: files.length > 0 ? JSON.stringify(files.map((f) => f.name)) : undefined,
+            vote_document: voteDocumentData,
           },
         });
       }
@@ -438,7 +558,7 @@ export default function PaperVoteModal({
             {/* 첨부파일 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                첨부파일
+                제출서류
               </Typography>
               <Box
                 onDragOver={handleDragOver}
@@ -487,10 +607,19 @@ export default function PaperVoteModal({
                         mb: 0.5,
                       }}
                     >
+                      {file.uploading && <CircularProgress size={16} />}
                       <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                        {file.name} ({formatFileSize(file.size)})
+                        {file.name}
+                        {file.size > 0 && ` (${formatFileSize(file.size)})`}
+                        {file.uploading && ' - 업로드 중...'}
+                        {file.uploaded && ' - 완료'}
+                        {file.isExisting && ' - 기존 파일'}
                       </Typography>
-                      <IconButton size="small" onClick={() => handleFileDelete(index)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleFileDelete(index)}
+                        disabled={file.uploading}
+                      >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>

@@ -19,10 +19,11 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Download as DownloadIcon } from '@mui/icons-material';
+import { Download as DownloadIcon, AttachFile as AttachFileIcon } from '@mui/icons-material';
 import { useVoteRecords, useExportVoteRecords } from '@/src/hooks/useVote';
 import type { VoteRecord } from '@/src/types/vote.types';
 import PaperVoteModal from './PaperVoteModal';
+import VoteDocumentModal from './VoteDocumentModal';
 
 interface VoteHistoryProps {
   projectId: number;
@@ -45,6 +46,11 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<VoteRecord | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // 첨부파일 모달
+  const [docModalOpen, setDocModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Record<string, unknown> | null>(null);
+  const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
   // 스낵바
   const [snackbar, setSnackbar] = useState<{
@@ -90,6 +96,20 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
     setSnackbar({ open: true, message: '서면투표가 등록되었습니다.', severity: 'success' });
     refetch();
   }, [refetch]);
+
+  // 첨부파일 보기
+  const handleViewDocument = useCallback((record: VoteRecord) => {
+    setSelectedDocument(record.vote_document || null);
+    setSelectedMemberName(record.member_name);
+    setDocModalOpen(true);
+  }, []);
+
+  // 첨부파일 모달 닫기
+  const handleDocModalClose = useCallback(() => {
+    setDocModalOpen(false);
+    setSelectedDocument(null);
+    setSelectedMemberName('');
+  }, []);
 
   // 엑셀 다운로드
   const handleExport = async () => {
@@ -192,6 +212,9 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
                 <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }} align="center">
                   투표방식
                 </TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 80, whiteSpace: 'nowrap' }} align="center">
+                  제출서류
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600, width: 130, whiteSpace: 'nowrap' }} align="center">
                   관리
                 </TableCell>
@@ -200,13 +223,13 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
               ) : records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">투표 내역이 없습니다.</Typography>
                   </TableCell>
                 </TableRow>
@@ -228,6 +251,20 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
                         : '-'}
                     </TableCell>
                     <TableCell align="center">{getVoteMethodText(record)}</TableCell>
+                    <TableCell align="center">
+                      {record.vote_document ? (
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => handleViewDocument(record)}
+                          sx={{ py: 0, px: 0.5, minWidth: 'auto' }}
+                        >
+                          <AttachFileIcon fontSize="small" />
+                        </Button>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell align="center">{renderManageButton(record)}</TableCell>
                   </TableRow>
                 ))
@@ -273,6 +310,14 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
           existingVoteDocument={selectedRecord.vote_document}
         />
       )}
+
+      {/* 첨부파일 보기 모달 */}
+      <VoteDocumentModal
+        open={docModalOpen}
+        onClose={handleDocModalClose}
+        document={selectedDocument}
+        memberName={selectedMemberName}
+      />
 
       {/* 스낵바 */}
       <Snackbar
