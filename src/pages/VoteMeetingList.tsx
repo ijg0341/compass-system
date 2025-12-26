@@ -12,20 +12,19 @@ import {
 } from '@mui/material';
 import { MeetingTable } from '@/src/components/vote';
 import { useMeetings } from '@/src/hooks/useVote';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import type { Meeting } from '@/src/types/vote.types';
-
-// 현재 프로젝트 ID
-const PROJECT_ID = 1;
 
 export default function VoteMeetingListPage() {
   const navigate = useNavigate();
+  const { projectUuid } = useCurrentProject();
 
   // 페이지네이션
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // API 훅
-  const { data: meetingsData, isLoading, error } = useMeetings(PROJECT_ID, {
+  const { data: meetingsData, isLoading, error } = useMeetings(projectUuid, {
     offset: page * rowsPerPage,
     limit: rowsPerPage,
   });

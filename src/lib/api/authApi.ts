@@ -23,6 +23,12 @@ export interface LoginResponse {
   user: User;
 }
 
+// 프로젝트 정보 타입
+export interface Project {
+  uuid: string;
+  name: string;
+}
+
 /**
  * 로그인
  */
@@ -44,5 +50,13 @@ export const logout = async (): Promise<ApiResponse<null>> => {
  */
 export const getMe = async (): Promise<ApiResponse<{ user: User }>> => {
   const response = await api.get<ApiResponse<{ user: User }>>('/adm/auth/me');
+  return response.data;
+};
+
+/**
+ * 접근 가능한 프로젝트 목록 조회
+ */
+export const getProjects = async (): Promise<ApiResponse<Project[]>> => {
+  const response = await api.get<ApiResponse<Project[]>>('/adm/auth/projects');
   return response.data;
 };

@@ -23,7 +23,7 @@ import { useAgendaStatus, useMeetingStats } from '@/src/hooks/useVote';
 import type { AgendaWithVotes, VoteResult } from '@/src/lib/api/voteApi';
 
 interface AgendaStatusProps {
-  projectId: number;
+  projectUuid: string;
   meetingId: number;
   meetingDate?: string;
 }
@@ -80,9 +80,9 @@ function getAttendanceCount(agenda: AgendaWithVotes): number {
   return agenda.attendance_count || 0;
 }
 
-export default function AgendaStatus({ projectId, meetingId, meetingDate }: AgendaStatusProps) {
-  const { data: agendaStatusData, isLoading } = useAgendaStatus(projectId, meetingId);
-  const { data: stats } = useMeetingStats(projectId, meetingId);
+export default function AgendaStatus({ projectUuid, meetingId, meetingDate }: AgendaStatusProps) {
+  const { data: agendaStatusData, isLoading } = useAgendaStatus(projectUuid, meetingId);
+  const { data: stats } = useMeetingStats(projectUuid, meetingId);
   const agendas = agendaStatusData?.agendas;
 
   const [snackbar, setSnackbar] = useState<{

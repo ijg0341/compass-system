@@ -16,9 +16,7 @@ import {
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { MeetingDetailTabs } from '@/src/components/vote';
 import { useMeeting } from '@/src/hooks/useVote';
-
-// 현재 프로젝트 ID
-const PROJECT_ID = 1;
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 
 // 탭 타입
 type TabType = 'roster' | 'agenda' | 'history';
@@ -27,6 +25,7 @@ export default function VoteMeetingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { projectUuid } = useCurrentProject();
   const meetingId = Number(id);
 
   // 탭 상태
@@ -46,7 +45,7 @@ export default function VoteMeetingDetailPage() {
     }
   };
 
-  const { data: meeting, isLoading, error } = useMeeting(PROJECT_ID, meetingId);
+  const { data: meeting, isLoading, error } = useMeeting(projectUuid, meetingId);
 
   if (isLoading) {
     return (
@@ -108,7 +107,7 @@ export default function VoteMeetingDetailPage() {
       </Box>
 
       {/* 탭 콘텐츠 */}
-      <MeetingDetailTabs meeting={meeting} projectId={PROJECT_ID} currentTab={currentTab} />
+      <MeetingDetailTabs meeting={meeting} projectUuid={projectUuid} currentTab={currentTab} />
     </Box>
   );
 }

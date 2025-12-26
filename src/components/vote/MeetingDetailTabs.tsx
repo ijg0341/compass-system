@@ -12,27 +12,27 @@ type TabType = 'roster' | 'agenda' | 'history';
 
 interface MeetingDetailTabsProps {
   meeting: Meeting;
-  projectId: number;
+  projectUuid: string;
   currentTab: TabType;
 }
 
-export default function MeetingDetailTabs({ meeting, projectId, currentTab }: MeetingDetailTabsProps) {
+export default function MeetingDetailTabs({ meeting, projectUuid, currentTab }: MeetingDetailTabsProps) {
   return (
     <Box>
       {currentTab === 'roster' && (
-        <MemberRoster projectId={projectId} meetingId={meeting.id} />
+        <MemberRoster projectUuid={projectUuid} meetingId={meeting.id} />
       )}
 
       {currentTab === 'agenda' && (
         <AgendaStatus
-          projectId={projectId}
+          projectUuid={projectUuid}
           meetingId={meeting.id}
           meetingDate={meeting.conference_date}
         />
       )}
 
       {currentTab === 'history' && (
-        <VoteHistory projectId={projectId} meetingId={meeting.id} />
+        <VoteHistory projectUuid={projectUuid} meetingId={meeting.id} />
       )}
     </Box>
   );

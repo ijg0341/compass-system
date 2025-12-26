@@ -26,7 +26,7 @@ import PaperVoteModal from './PaperVoteModal';
 import VoteDocumentModal from './VoteDocumentModal';
 
 interface VoteHistoryProps {
-  projectId: number;
+  projectUuid: string;
   meetingId: number;
 }
 
@@ -37,7 +37,7 @@ const attendanceLabels: Record<string, string> = {
   '-': '-',
 };
 
-export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) {
+export default function VoteHistory({ projectUuid, meetingId }: VoteHistoryProps) {
   // 페이지네이션
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -60,7 +60,7 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
   }>({ open: false, message: '', severity: 'info' });
 
   // API 훅
-  const { data: recordsData, isLoading, refetch } = useVoteRecords(projectId, meetingId, {
+  const { data: recordsData, isLoading, refetch } = useVoteRecords(projectUuid, meetingId, {
     offset: page * rowsPerPage,
     limit: rowsPerPage,
   });
@@ -114,7 +114,7 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
   // 엑셀 다운로드
   const handleExport = async () => {
     try {
-      const blob = await exportMutation.mutateAsync({ projectId, meetingId });
+      const blob = await exportMutation.mutateAsync({ projectUuid, meetingId });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -294,7 +294,7 @@ export default function VoteHistory({ projectId, meetingId }: VoteHistoryProps) 
           open={modalOpen}
           onClose={handleModalClose}
           onSave={handleModalSave}
-          projectId={projectId}
+          projectUuid={projectUuid}
           meetingId={meetingId}
           memberId={selectedRecord.member_id}
           memberInfo={{

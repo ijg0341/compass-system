@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import { User, login as loginApi, logout as logoutApi, getMe, LoginRequest } from '@/src/lib/api/authApi';
 import { apiClient } from '@/src/lib/api/client';
+import { useProjectStore } from './projectStore';
 
 interface AuthState {
   user: User | null;
@@ -35,9 +36,10 @@ export const useAuthStore = create<AuthState>((set) => {
     login: async (data: LoginRequest) => {
       set({ isSubmitting: true, error: null });
       try {
-        const response = await loginApi(data);
+        await loginApi(data);
+        // 로그인 성공 후 프로젝트 목록 조회
+        await useProjectStore.getState().fetchProjects();
         set({
-          user: response.data.user,
           isAuthenticated: true,
           isSubmitting: false,
         });
@@ -59,6 +61,7 @@ export const useAuthStore = create<AuthState>((set) => {
       } catch {
         // 로그아웃 실패해도 클라이언트 상태는 초기화
       }
+      useProjectStore.getState().clearProjects();
       set({ user: null, isAuthenticated: false, isSubmitting: false });
     },
 
@@ -66,12 +69,15 @@ export const useAuthStore = create<AuthState>((set) => {
       set({ isChecking: true });
       try {
         const response = await getMe();
+        // 인증 확인 후 프로젝트 목록 조회
+        await useProjectStore.getState().fetchProjects();
         set({
           user: response.data.user,
           isAuthenticated: true,
           isChecking: false,
         });
       } catch {
+        useProjectStore.getState().clearProjects();
         set({
           user: null,
           isAuthenticated: false,

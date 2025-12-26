@@ -14,9 +14,17 @@ export interface Dongho {
   ho: string;
   unit_type: string | null;
   ev_lines: string[] | null;
+  // 계약자 정보
   contractor_name: string | null;
   contractor_phone: string | null;
   contractor_birth: string | null;
+  // 입주자 정보
+  resident_name: string | null;
+  resident_phone: string | null;
+  resident_birth: string | null;
+  resident_type: string | null;
+  resident_date: string | null;
+  level: string | null;
 }
 
 /** 동호 코드 등록/수정 요청

@@ -35,7 +35,7 @@ interface PaperVoteModalProps {
   open: boolean;
   onClose: () => void;
   onSave: () => void;
-  projectId: number;
+  projectUuid: string;
   meetingId: number;
   memberId: number;
   memberInfo: {
@@ -70,7 +70,7 @@ export default function PaperVoteModal({
   open,
   onClose,
   onSave,
-  projectId,
+  projectUuid,
   meetingId,
   memberId,
   memberInfo,
@@ -93,7 +93,7 @@ export default function PaperVoteModal({
   const [error, setError] = useState<string | null>(null);
 
   // API 훅
-  const { data: agendas, isLoading: isAgendasLoading } = useAgendas(projectId, meetingId);
+  const { data: agendas, isLoading: isAgendasLoading } = useAgendas(projectUuid, meetingId);
   const registerMutation = useRegisterPaperVote();
   const updateMutation = useUpdatePaperVote();
 
@@ -361,7 +361,7 @@ export default function PaperVoteModal({
 
       if (isEditMode) {
         await updateMutation.mutateAsync({
-          projectId,
+          projectUuid,
           meetingId,
           memberId,
           data: {
@@ -373,7 +373,7 @@ export default function PaperVoteModal({
         });
       } else {
         await registerMutation.mutateAsync({
-          projectId,
+          projectUuid,
           meetingId,
           data: {
             conference_voter_id: memberId,
@@ -395,7 +395,7 @@ export default function PaperVoteModal({
     isEditMode,
     registerMutation,
     updateMutation,
-    projectId,
+    projectUuid,
     meetingId,
     memberId,
     onSave,

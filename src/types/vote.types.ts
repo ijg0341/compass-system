@@ -35,7 +35,7 @@ export type AgendaResultType = 'passed' | 'rejected' | string;
 /** 총회 (conference 테이블 매핑) */
 export interface Conference {
   id: number;
-  project_id: number;
+  project_uuid: string;                // 프로젝트 UUID
   name: string;                        // 총회명
   retry_vote: number;                  // 재투표 가능회수
   is_online_only: boolean;             // 전자투표만 진행 여부

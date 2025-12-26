@@ -37,10 +37,8 @@ import {
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useCreateMeeting, useUpdateMeeting, useDeleteMeeting, useMeetings, useMeeting } from '@/src/hooks/useVote';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import type { Conference } from '@/src/types/vote.types';
-
-// 현재 프로젝트 ID (임시)
-const PROJECT_ID = 1;
 
 // 안건 입력 폼 타입 (DB 필드 기준)
 interface AgendaFormItem {
@@ -85,6 +83,7 @@ const initialFormData: FormData = {
 
 export default function VoteMeetingCreatePage() {
   const navigate = useNavigate();
+  const { projectUuid } = useCurrentProject();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [agendaForm, setAgendaForm] = useState<AgendaFormItem>({ ...initialAgendaForm });
   const [snackbar, setSnackbar] = useState<{
@@ -107,7 +106,7 @@ export default function VoteMeetingCreatePage() {
   const createMutation = useCreateMeeting();
   const updateMutation = useUpdateMeeting();
   const deleteMutation = useDeleteMeeting();
-  const { data: meetingsData, isLoading: isLoadingMeetings, refetch } = useMeetings(PROJECT_ID, {
+  const { data: meetingsData, isLoading: isLoadingMeetings, refetch } = useMeetings(projectUuid, {
     offset: page * rowsPerPage,
     limit: rowsPerPage,
   });
@@ -164,7 +163,7 @@ export default function VoteMeetingCreatePage() {
     try {
       // 상세 조회 API 호출 (안건 포함)
       const { getMeeting } = await import('@/src/lib/api/voteApi');
-      const meeting = await getMeeting(PROJECT_ID, meetingId);
+      const meeting = await getMeeting(projectUuid, meetingId);
 
       // datetime-local 형식으로 변환 (YYYY-MM-DDTHH:mm)
       const formatDateTime = (dateStr: string | undefined) => {
@@ -216,7 +215,7 @@ export default function VoteMeetingCreatePage() {
 
     try {
       await deleteMutation.mutateAsync({
-        projectId: PROJECT_ID,
+        projectUuid,
         id: deleteTargetId,
       });
       setSnackbar({ open: true, message: '전자투표가 삭제되었습니다.', severity: 'success' });
@@ -267,7 +266,7 @@ export default function VoteMeetingCreatePage() {
       if (editingId) {
         // 수정 모드
         await updateMutation.mutateAsync({
-          projectId: PROJECT_ID,
+          projectUuid,
           id: editingId,
           data: requestData,
         });
@@ -276,7 +275,7 @@ export default function VoteMeetingCreatePage() {
       } else {
         // 생성 모드
         await createMutation.mutateAsync({
-          projectId: PROJECT_ID,
+          projectUuid,
           data: requestData,
         });
         setSnackbar({ open: true, message: '전자투표가 생성되었습니다.', severity: 'success' });

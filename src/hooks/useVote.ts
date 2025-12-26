@@ -1,5 +1,6 @@
 /**
  * 전자투표 관련 React Query hooks
+ * API 문서 기준: 2025-12-24
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -53,32 +54,32 @@ export const voteKeys = {
   all: ['vote'] as const,
 
   // 총회
-  meetings: (projectId: number, params?: MeetingListParams) =>
-    [...voteKeys.all, 'meetings', projectId, params] as const,
-  meeting: (projectId: number, id: number) =>
-    [...voteKeys.all, 'meeting', projectId, id] as const,
-  meetingStats: (projectId: number, meetingId: number) =>
-    [...voteKeys.all, 'meetingStats', projectId, meetingId] as const,
+  meetings: (projectUuid: string, params?: MeetingListParams) =>
+    [...voteKeys.all, 'meetings', projectUuid, params] as const,
+  meeting: (projectUuid: string, id: number) =>
+    [...voteKeys.all, 'meeting', projectUuid, id] as const,
+  meetingStats: (projectUuid: string, meetingId: number) =>
+    [...voteKeys.all, 'meetingStats', projectUuid, meetingId] as const,
 
   // 조합원
-  members: (projectId: number, meetingId: number, params?: VoteMemberListParams) =>
-    [...voteKeys.all, 'members', projectId, meetingId, params] as const,
+  members: (projectUuid: string, meetingId: number, params?: VoteMemberListParams) =>
+    [...voteKeys.all, 'members', projectUuid, meetingId, params] as const,
 
   // 안건
-  agendas: (projectId: number, meetingId: number) =>
-    [...voteKeys.all, 'agendas', projectId, meetingId] as const,
-  agendaStatus: (projectId: number, meetingId: number) =>
-    [...voteKeys.all, 'agendaStatus', projectId, meetingId] as const,
+  agendas: (projectUuid: string, meetingId: number) =>
+    [...voteKeys.all, 'agendas', projectUuid, meetingId] as const,
+  agendaStatus: (projectUuid: string, meetingId: number) =>
+    [...voteKeys.all, 'agendaStatus', projectUuid, meetingId] as const,
 
   // 투표 내역
-  voteRecords: (projectId: number, meetingId: number, params?: VoteRecordListParams) =>
-    [...voteKeys.all, 'voteRecords', projectId, meetingId, params] as const,
-  voteRecord: (projectId: number, meetingId: number, recordId: number) =>
-    [...voteKeys.all, 'voteRecord', projectId, meetingId, recordId] as const,
+  voteRecords: (projectUuid: string, meetingId: number, params?: VoteRecordListParams) =>
+    [...voteKeys.all, 'voteRecords', projectUuid, meetingId, params] as const,
+  voteRecord: (projectUuid: string, meetingId: number, recordId: number) =>
+    [...voteKeys.all, 'voteRecord', projectUuid, meetingId, recordId] as const,
 
   // 동 목록
-  dongs: (projectId: number, meetingId: number) =>
-    [...voteKeys.all, 'dongs', projectId, meetingId] as const,
+  dongs: (projectUuid: string, meetingId: number) =>
+    [...voteKeys.all, 'dongs', projectUuid, meetingId] as const,
 };
 
 // =============================================================================
@@ -88,11 +89,11 @@ export const voteKeys = {
 /**
  * 총회 목록 조회
  */
-export function useMeetings(projectId: number, params?: MeetingListParams) {
+export function useMeetings(projectUuid: string, params?: MeetingListParams) {
   return useQuery({
-    queryKey: voteKeys.meetings(projectId, params),
-    queryFn: () => getMeetings(projectId, params),
-    enabled: !!projectId,
+    queryKey: voteKeys.meetings(projectUuid, params),
+    queryFn: () => getMeetings(projectUuid, params),
+    enabled: !!projectUuid,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }
@@ -100,22 +101,22 @@ export function useMeetings(projectId: number, params?: MeetingListParams) {
 /**
  * 총회 상세 조회
  */
-export function useMeeting(projectId: number, id: number) {
+export function useMeeting(projectUuid: string, id: number) {
   return useQuery({
-    queryKey: voteKeys.meeting(projectId, id),
-    queryFn: () => getMeeting(projectId, id),
-    enabled: !!projectId && !!id,
+    queryKey: voteKeys.meeting(projectUuid, id),
+    queryFn: () => getMeeting(projectUuid, id),
+    enabled: !!projectUuid && !!id,
   });
 }
 
 /**
  * 총회 통계 조회
  */
-export function useMeetingStats(projectId: number, meetingId: number) {
+export function useMeetingStats(projectUuid: string, meetingId: number) {
   return useQuery({
-    queryKey: voteKeys.meetingStats(projectId, meetingId),
-    queryFn: () => getMeetingStats(projectId, meetingId),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.meetingStats(projectUuid, meetingId),
+    queryFn: () => getMeetingStats(projectUuid, meetingId),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -127,8 +128,8 @@ export function useCreateMeeting() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, data }: { projectId: number; data: MeetingRequest }) =>
-      createMeeting(projectId, data),
+    mutationFn: ({ projectUuid, data }: { projectUuid: string; data: MeetingRequest }) =>
+      createMeeting(projectUuid, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -143,14 +144,14 @@ export function useUpdateMeeting() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       id,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       id: number;
       data: Partial<MeetingRequest>;
-    }) => updateMeeting(projectId, id, data),
+    }) => updateMeeting(projectUuid, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -164,8 +165,8 @@ export function useDeleteMeeting() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, id }: { projectId: number; id: number }) =>
-      deleteMeeting(projectId, id),
+    mutationFn: ({ projectUuid, id }: { projectUuid: string; id: number }) =>
+      deleteMeeting(projectUuid, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -180,14 +181,14 @@ export function useUpdateMeetingStatus() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       id,
       status,
     }: {
-      projectId: number;
+      projectUuid: string;
       id: number;
       status: 'active' | 'closed' | 'completed';
-    }) => updateMeetingStatus(projectId, id, status),
+    }) => updateMeetingStatus(projectUuid, id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -202,14 +203,14 @@ export function useUpdateMeetingStatus() {
  * 조합원 목록 조회
  */
 export function useVoteMembers(
-  projectId: number,
+  projectUuid: string,
   meetingId: number,
   params?: VoteMemberListParams
 ) {
   return useQuery({
-    queryKey: voteKeys.members(projectId, meetingId, params),
-    queryFn: () => getVoteMembers(projectId, meetingId, params),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.members(projectUuid, meetingId, params),
+    queryFn: () => getVoteMembers(projectUuid, meetingId, params),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -222,14 +223,14 @@ export function useCreateVoteMember() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       data: VoteMemberRequest;
-    }) => createVoteMember(projectId, meetingId, data),
+    }) => createVoteMember(projectUuid, meetingId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -244,16 +245,16 @@ export function useUpdateVoteMember() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       memberId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       memberId: number;
       data: VoteMemberRequest;
-    }) => updateVoteMember(projectId, meetingId, memberId, data),
+    }) => updateVoteMember(projectUuid, meetingId, memberId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -268,14 +269,14 @@ export function useDeleteVoteMember() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       memberId,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       memberId: number;
-    }) => deleteVoteMember(projectId, meetingId, memberId),
+    }) => deleteVoteMember(projectUuid, meetingId, memberId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -290,14 +291,14 @@ export function useImportVoteMembers() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       file,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       file: File;
-    }) => importVoteMembers(projectId, meetingId, file),
+    }) => importVoteMembers(projectUuid, meetingId, file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -309,8 +310,8 @@ export function useImportVoteMembers() {
  */
 export function useExportVoteMembers() {
   return useMutation({
-    mutationFn: ({ projectId, meetingId }: { projectId: number; meetingId: number }) =>
-      exportVoteMembers(projectId, meetingId),
+    mutationFn: ({ projectUuid, meetingId }: { projectUuid: string; meetingId: number }) =>
+      exportVoteMembers(projectUuid, meetingId),
   });
 }
 
@@ -321,11 +322,11 @@ export function useExportVoteMembers() {
 /**
  * 안건 목록 조회
  */
-export function useAgendas(projectId: number, meetingId: number) {
+export function useAgendas(projectUuid: string, meetingId: number) {
   return useQuery({
-    queryKey: voteKeys.agendas(projectId, meetingId),
-    queryFn: () => getAgendas(projectId, meetingId),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.agendas(projectUuid, meetingId),
+    queryFn: () => getAgendas(projectUuid, meetingId),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 5, // 5분
   });
 }
@@ -333,11 +334,11 @@ export function useAgendas(projectId: number, meetingId: number) {
 /**
  * 안건 현황 조회 (투표 집계 포함)
  */
-export function useAgendaStatus(projectId: number, meetingId: number) {
+export function useAgendaStatus(projectUuid: string, meetingId: number) {
   return useQuery({
-    queryKey: voteKeys.agendaStatus(projectId, meetingId),
-    queryFn: () => getAgendaStatus(projectId, meetingId),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.agendaStatus(projectUuid, meetingId),
+    queryFn: () => getAgendaStatus(projectUuid, meetingId),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -350,14 +351,14 @@ export function useCreateAgenda() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       data: AgendaRequest;
-    }) => createAgenda(projectId, meetingId, data),
+    }) => createAgenda(projectUuid, meetingId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -372,16 +373,16 @@ export function useUpdateAgenda() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       agendaId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       agendaId: number;
       data: Partial<AgendaRequest>;
-    }) => updateAgenda(projectId, meetingId, agendaId, data),
+    }) => updateAgenda(projectUuid, meetingId, agendaId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -396,14 +397,14 @@ export function useDeleteAgenda() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       agendaId,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       agendaId: number;
-    }) => deleteAgenda(projectId, meetingId, agendaId),
+    }) => deleteAgenda(projectUuid, meetingId, agendaId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -418,14 +419,14 @@ export function useDeleteAgenda() {
  * 투표 내역 목록 조회
  */
 export function useVoteRecords(
-  projectId: number,
+  projectUuid: string,
   meetingId: number,
   params?: VoteRecordListParams
 ) {
   return useQuery({
-    queryKey: voteKeys.voteRecords(projectId, meetingId, params),
-    queryFn: () => getVoteRecords(projectId, meetingId, params),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.voteRecords(projectUuid, meetingId, params),
+    queryFn: () => getVoteRecords(projectUuid, meetingId, params),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 1, // 1분
   });
 }
@@ -433,11 +434,11 @@ export function useVoteRecords(
 /**
  * 투표 내역 상세 조회
  */
-export function useVoteRecord(projectId: number, meetingId: number, recordId: number) {
+export function useVoteRecord(projectUuid: string, meetingId: number, recordId: number) {
   return useQuery({
-    queryKey: voteKeys.voteRecord(projectId, meetingId, recordId),
-    queryFn: () => getVoteRecord(projectId, meetingId, recordId),
-    enabled: !!projectId && !!meetingId && !!recordId,
+    queryKey: voteKeys.voteRecord(projectUuid, meetingId, recordId),
+    queryFn: () => getVoteRecord(projectUuid, meetingId, recordId),
+    enabled: !!projectUuid && !!meetingId && !!recordId,
   });
 }
 
@@ -446,8 +447,8 @@ export function useVoteRecord(projectId: number, meetingId: number, recordId: nu
  */
 export function useExportVoteRecords() {
   return useMutation({
-    mutationFn: ({ projectId, meetingId }: { projectId: number; meetingId: number }) =>
-      exportVoteRecords(projectId, meetingId),
+    mutationFn: ({ projectUuid, meetingId }: { projectUuid: string; meetingId: number }) =>
+      exportVoteRecords(projectUuid, meetingId),
   });
 }
 
@@ -463,14 +464,14 @@ export function useRegisterPaperVote() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       data: PaperVoteRequest;
-    }) => registerPaperVote(projectId, meetingId, data),
+    }) => registerPaperVote(projectUuid, meetingId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -485,16 +486,16 @@ export function useUpdatePaperVote() {
 
   return useMutation({
     mutationFn: ({
-      projectId,
+      projectUuid,
       meetingId,
       memberId,
       data,
     }: {
-      projectId: number;
+      projectUuid: string;
       meetingId: number;
       memberId: number;
       data: PaperVoteRequest;
-    }) => updatePaperVote(projectId, meetingId, memberId, data),
+    }) => updatePaperVote(projectUuid, meetingId, memberId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voteKeys.all });
     },
@@ -508,11 +509,11 @@ export function useUpdatePaperVote() {
 /**
  * 동 목록 조회
  */
-export function useVoteDongs(projectId: number, meetingId: number) {
+export function useVoteDongs(projectUuid: string, meetingId: number) {
   return useQuery({
-    queryKey: voteKeys.dongs(projectId, meetingId),
-    queryFn: () => getVoteDongs(projectId, meetingId),
-    enabled: !!projectId && !!meetingId,
+    queryKey: voteKeys.dongs(projectUuid, meetingId),
+    queryFn: () => getVoteDongs(projectUuid, meetingId),
+    enabled: !!projectUuid && !!meetingId,
     staleTime: 1000 * 60 * 30, // 30분
   });
 }

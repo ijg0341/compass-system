@@ -45,12 +45,15 @@ const IMPLEMENTED_PAGES = [
   '/pre-visit/register',    // PrevisitRegister.tsx
   '/pre-visit/reservation', // PrevisitReservation.tsx
   '/residence/move',        // ResidenceMove.tsx
+  '/residence/as',          // ASManagePage.tsx (A/S 관리)
   '/statistics/as',         // ASManageList.tsx
+  '/user',                  // UserManagement.tsx (사용자 관리 - 탭 통합)
   '/user/resident',         // MemberResident.tsx
   '/smartnet/pre-visit',    // PrevisitManage.tsx
   '/smartnet/move',         // SmartnetCreate.tsx
   '/smartnet/vote',         // VoteMeetingCreate.tsx
-  '/base-code/dongho',      // DonghoManage.tsx
+  '/base-code/dongho',      // BaseCodeManagePage.tsx (동/호 탭)
+  '/base-code/defect-type', // BaseCodeManagePage.tsx (하자종류 탭)
   '/vote/meetings',         // VoteMeetingList.tsx
 ];
 
@@ -72,6 +75,7 @@ const menuItems: NavItem[] = [
     subMenu: [
       { text: '입주방문등록', path: '/residence/visit-register' },
       { text: '이사예약', path: '/residence/move' },
+      { text: 'A/S 관리', path: '/residence/as' },
     ]
   },
   {
@@ -124,9 +128,9 @@ const menuItems: NavItem[] = [
     icon: People,
     path: '/user',
     subMenu: [
-      { text: '입주자 관리', path: '/user/resident' },
-      { text: '협력사 관리', path: '/user/partner' },
-      { text: '매니저 관리', path: '/user/manager' },
+      { text: '입주자 관리', path: '/user?tab=0' },
+      { text: '협력사 관리', path: '/user?tab=1' },
+      { text: '매니저 관리', path: '/user?tab=2' },
     ]
   },
   {
@@ -166,7 +170,9 @@ export default function HorizontalNav() {
 
   // 페이지 이동 핸들러 (구현 여부 체크)
   const navigateTo = (path: string) => {
-    if (IMPLEMENTED_PAGES.includes(path)) {
+    // 쿼리 파라미터 제외한 pathname만 추출
+    const pathname = path.split('?')[0];
+    if (IMPLEMENTED_PAGES.includes(pathname)) {
       navigate(path);
     } else {
       setToastOpen(true);

@@ -1,9 +1,10 @@
 /**
  * 동호 관리 API 서비스
- * API 문서 기준: 2025-12-05
+ * API 문서 기준: 2025-12-24
  *
  * API 경로 형식:
- * - 관리자용: /adm/project/{projectId}/donghos
+ * - 조회용: /adm/project/{projectUuid}/donghos
+ * - 관리용: /adm/project/{projectUuid}/donghos-codes
  */
 import { api } from './client';
 import type { ApiResponse, ApiListData, ApiCreateResponse } from '@/src/types/api';
@@ -13,22 +14,22 @@ import type { Dongho, DonghoRequest, DonghoListParams } from '@/src/types/dongho
 // API 경로 헬퍼
 // =============================================================================
 
-const getAdminBasePath = (projectId: number) => `/adm/project/${projectId}`;
+const getAdminBasePath = (projectUuid: string) => `/adm/project/${projectUuid}`;
 
 // =============================================================================
-// 동호 코드 API (CP-SA-07-001)
-// Base URL: /adm/project/{projectId}/donghos
+// 동호 조회 API (donghos)
+// Base URL: /adm/project/{projectUuid}/donghos
 // =============================================================================
 
 /**
  * 동호 코드 목록 조회
  */
 export async function getDonghos(
-  projectId: number,
+  projectUuid: string,
   params?: DonghoListParams
 ): Promise<ApiListData<Dongho>> {
   const response = await api.get<ApiResponse<ApiListData<Dongho>>>(
-    `${getAdminBasePath(projectId)}/donghos`,
+    `${getAdminBasePath(projectUuid)}/donghos`,
     { params }
   );
   return response.data.data;
@@ -37,22 +38,27 @@ export async function getDonghos(
 /**
  * 동호 코드 상세 조회
  */
-export async function getDongho(projectId: number, id: number): Promise<Dongho> {
+export async function getDongho(projectUuid: string, id: number): Promise<Dongho> {
   const response = await api.get<ApiResponse<Dongho>>(
-    `${getAdminBasePath(projectId)}/donghos/${id}`
+    `${getAdminBasePath(projectUuid)}/donghos/${id}`
   );
   return response.data.data;
 }
+
+// =============================================================================
+// 동호 관리 API (donghos-codes)
+// Base URL: /adm/project/{projectUuid}/donghos-codes
+// =============================================================================
 
 /**
  * 동호 코드 등록
  */
 export async function createDongho(
-  projectId: number,
+  projectUuid: string,
   data: DonghoRequest
 ): Promise<ApiCreateResponse['data']> {
   const response = await api.post<ApiCreateResponse>(
-    `${getAdminBasePath(projectId)}/donghos`,
+    `${getAdminBasePath(projectUuid)}/donghos-codes`,
     data
   );
   return response.data.data;
@@ -62,30 +68,30 @@ export async function createDongho(
  * 동호 코드 수정
  */
 export async function updateDongho(
-  projectId: number,
+  projectUuid: string,
   id: number,
   data: Partial<DonghoRequest>
 ): Promise<void> {
-  await api.put(`${getAdminBasePath(projectId)}/donghos/${id}`, data);
+  await api.put(`${getAdminBasePath(projectUuid)}/donghos-codes/${id}`, data);
 }
 
 /**
  * 동호 코드 삭제
  */
-export async function deleteDongho(projectId: number, id: number): Promise<void> {
-  await api.delete(`${getAdminBasePath(projectId)}/donghos/${id}`);
+export async function deleteDongho(projectUuid: string, id: number): Promise<void> {
+  await api.delete(`${getAdminBasePath(projectUuid)}/donghos-codes/${id}`);
 }
 
 // =============================================================================
-// 엑셀 다운로드/업로드 API (2025-12-05 추가)
+// 엑셀 다운로드/업로드 API (donghos-codes)
 // =============================================================================
 
 /**
  * 동호 엑셀 다운로드 (템플릿 겸용)
  * 데이터가 없어도 헤더만 있는 템플릿으로 사용 가능
  */
-export async function downloadDonghosExcel(projectId: number): Promise<void> {
-  const response = await api.get(`${getAdminBasePath(projectId)}/donghos/excel`, {
+export async function downloadDonghosExcel(projectUuid: string): Promise<void> {
+  const response = await api.get(`${getAdminBasePath(projectUuid)}/donghos-codes/excel`, {
     responseType: 'blob',
   });
 
@@ -120,18 +126,18 @@ export interface DonghoUploadResponse {
 
 /**
  * 동호 엑셀 업로드
- * @param projectId 프로젝트 ID
+ * @param projectUuid 프로젝트 UUID
  * @param file 엑셀 파일 (xlsx, xls)
  */
 export async function uploadDonghosExcel(
-  projectId: number,
+  projectUuid: string,
   file: File
 ): Promise<DonghoUploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await api.post<ApiResponse<DonghoUploadResponse>>(
-    `${getAdminBasePath(projectId)}/donghos/upload`,
+    `${getAdminBasePath(projectUuid)}/donghos-codes/upload`,
     formData,
     {
       headers: {

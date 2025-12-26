@@ -46,7 +46,7 @@ import {
 import type { VoteMember, VoteMemberRequest, PreVoteIntention } from '@/src/types/vote.types';
 
 interface MemberRosterProps {
-  projectId: number;
+  projectUuid: string;
   meetingId: number;
 }
 
@@ -70,7 +70,7 @@ const initialFormState: VoteMemberRequest = {
   prevote_intention: 'undecided',
 };
 
-export default function MemberRoster({ projectId, meetingId }: MemberRosterProps) {
+export default function MemberRoster({ projectUuid, meetingId }: MemberRosterProps) {
   // 페이지네이션
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -97,7 +97,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // API 훅
-  const { data: membersData, isLoading, refetch } = useVoteMembers(projectId, meetingId, {
+  const { data: membersData, isLoading, refetch } = useVoteMembers(projectUuid, meetingId, {
     offset: page * rowsPerPage,
     limit: rowsPerPage,
   });
@@ -148,7 +148,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
         }
 
         await updateMutation.mutateAsync({
-          projectId,
+          projectUuid,
           meetingId,
           memberId: editingId,
           data: formData,
@@ -156,7 +156,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
         setSnackbar({ open: true, message: '수정되었습니다.', severity: 'success' });
       } else {
         await createMutation.mutateAsync({
-          projectId,
+          projectUuid,
           meetingId,
           data: formData,
         });
@@ -178,7 +178,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
         setSnackbar({ open: true, message: '저장에 실패했습니다.', severity: 'error' });
       }
     }
-  }, [formData, editingId, members, createMutation, updateMutation, projectId, meetingId, refetch]);
+  }, [formData, editingId, members, createMutation, updateMutation, projectUuid, meetingId, refetch]);
 
   // 수정 버튼 클릭
   const handleEdit = useCallback((member: VoteMember) => {
@@ -207,7 +207,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
 
     try {
       await deleteMutation.mutateAsync({
-        projectId,
+        projectUuid,
         meetingId,
         memberId: deletingMember.id,
       });
@@ -219,7 +219,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
 
     setDeleteDialogOpen(false);
     setDeletingMember(null);
-  }, [deletingMember, deleteMutation, projectId, meetingId, refetch]);
+  }, [deletingMember, deleteMutation, projectUuid, meetingId, refetch]);
 
   // 취소
   const handleCancel = () => {
@@ -239,7 +239,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
 
     try {
       const result = await importMutation.mutateAsync({
-        projectId,
+        projectUuid,
         meetingId,
         file,
       });
@@ -259,7 +259,7 @@ export default function MemberRoster({ projectId, meetingId }: MemberRosterProps
   // 엑셀 다운로드
   const handleExport = async () => {
     try {
-      const blob = await exportMutation.mutateAsync({ projectId, meetingId });
+      const blob = await exportMutation.mutateAsync({ projectUuid, meetingId });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

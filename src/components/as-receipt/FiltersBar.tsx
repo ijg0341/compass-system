@@ -8,8 +8,6 @@ import {
   FormControl,
   InputLabel,
   Autocomplete,
-  ToggleButtonGroup,
-  ToggleButton,
   Switch,
   FormControlLabel,
   Button,
@@ -74,11 +72,12 @@ export default function FiltersBar({ filters, onFiltersChange }: FiltersBarProps
     setLocalFilters({ ...localFilters, subTrade: value?.name });
   };
 
-  const handleStatusChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newStatuses: ASReceiptStatus[]
-  ) => {
-    setLocalFilters({ ...localFilters, status: newStatuses });
+  const handleStatusChange = (event: SelectChangeEvent<ASReceiptStatus[]>) => {
+    const value = event.target.value;
+    setLocalFilters({
+      ...localFilters,
+      status: typeof value === 'string' ? [value as ASReceiptStatus] : value,
+    });
   };
 
   const handlePriorityChange = (event: SelectChangeEvent<Priority[]>) => {
@@ -203,56 +202,53 @@ export default function FiltersBar({ filters, onFiltersChange }: FiltersBarProps
         />
       </Box>
 
-      {/* 두 번째 줄: 상태 필터 */}
-      <Box sx={{ mb: 1 }}>
-        <ToggleButtonGroup
-          value={localFilters.status || []}
-          onChange={handleStatusChange}
-          size="small"
-          sx={{ flexWrap: 'wrap', gap: 0.5 }}
-        >
-          {statusOptions.map((status) => (
-            <ToggleButton
-              key={status.value}
-              value={status.value}
-              sx={{
-                '&.Mui-selected': {
-                  backgroundColor: status.color,
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: status.color,
-                  },
-                },
-              }}
-            >
-              {status.label}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Box>
-
-      {/* 세 번째 줄: 우선순위, 기간, 검색, 내 담당 */}
+      {/* 두 번째 줄: 상태, 우선순위, 기간, 검색, 내 담당 */}
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
-            md: 'auto auto auto 1fr auto auto auto',
+            md: 'auto auto auto auto 1fr auto auto auto',
           },
           gap: 1,
           mb: 1,
           alignItems: 'center',
         }}
       >
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>진행상태</InputLabel>
+          <Select
+            multiple
+            value={localFilters.status || []}
+            label="진행상태"
+            onChange={handleStatusChange}
+            renderValue={(selected) =>
+              (selected as ASReceiptStatus[]).length === 0
+                ? '전체'
+                : `${(selected as ASReceiptStatus[]).length}개 선택`
+            }
+          >
+            {statusOptions.map((status) => (
+              <MenuItem key={status.value} value={status.value}>
+                {status.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>우선순위</InputLabel>
+          <InputLabel>형태</InputLabel>
           <Select
             multiple
             value={localFilters.priority || []}
-            label="우선순위"
+            label="형태"
             onChange={handlePriorityChange}
-            renderValue={(selected) => `${(selected as Priority[]).length}개`}
+            renderValue={(selected) =>
+              (selected as Priority[]).length === 0
+                ? '전체'
+                : `${(selected as Priority[]).length}개 선택`
+            }
           >
             {priorityOptions.map((priority) => (
               <MenuItem key={priority.value} value={priority.value}>

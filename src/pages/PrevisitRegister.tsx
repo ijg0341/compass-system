@@ -18,13 +18,12 @@ import {
   useReturnDevice,
   usePrevisitDongs,
 } from '@/src/hooks/usePrevisit';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import type { PrevisitData, PrevisitDataRequest } from '@/src/types/previsit.types';
-
-// 현재 프로젝트 ID (추후 프로젝트 선택 기능 구현 시 동적으로 변경)
-const PROJECT_ID = 1;
 
 export default function PrevisitRegisterPage() {
   const [searchParams] = useSearchParams();
+  const { projectUuid } = useCurrentProject();
   const initialPrevisitId = searchParams.get('previsit_id');
   const initialSearchKeyword = searchParams.get('searchKeyword');
   const initialDong = searchParams.get('dong');
@@ -46,16 +45,16 @@ export default function PrevisitRegisterPage() {
   }>({ open: false, message: '', severity: 'info' });
 
   // API 조회
-  const { data: previsitsData } = usePrevisits(PROJECT_ID);
+  const { data: previsitsData } = usePrevisits(projectUuid);
   const previsits = useMemo(() => previsitsData?.list || [], [previsitsData]);
 
-  const { data: dongs } = usePrevisitDongs(PROJECT_ID);
+  const { data: dongs } = usePrevisitDongs(projectUuid);
 
   const {
     data: visitDataList,
     isLoading,
     error,
-  } = usePrevisitDataList(PROJECT_ID, {
+  } = usePrevisitDataList(projectUuid, {
     previsit_id: filters.previsit_id,
     searchKeyword: filters.searchKeyword,
     dong: filters.dong,
@@ -75,7 +74,7 @@ export default function PrevisitRegisterPage() {
   const handleSubmit = useCallback(
     async (data: PrevisitDataRequest) => {
       try {
-        await createMutation.mutateAsync({ projectId: PROJECT_ID, data });
+        await createMutation.mutateAsync({ projectUuid, data });
         setSnackbar({ open: true, message: '방문이 등록되었습니다.', severity: 'success' });
       } catch (err) {
         console.error('등록 실패:', err);
@@ -89,7 +88,7 @@ export default function PrevisitRegisterPage() {
   const handleReturnDevice = useCallback(
     async (id: number) => {
       try {
-        await returnDeviceMutation.mutateAsync({ projectId: PROJECT_ID, id });
+        await returnDeviceMutation.mutateAsync({ projectUuid, id });
         setSnackbar({ open: true, message: '단말기 회수가 완료되었습니다.', severity: 'success' });
       } catch (err) {
         console.error('회수 처리 실패:', err);

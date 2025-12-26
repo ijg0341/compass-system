@@ -1,6 +1,10 @@
 /**
  * 전자투표 API 서비스
- * API 경로: /adm/project/{projectId}/conferences/...
+ * API 문서 기준: 2025-12-24
+ *
+ * API 경로 형식:
+ * - 조회용: /adm/project/{projectUuid}/conferences
+ * - 관리용(CUD): /adm/project/{projectUuid}/smartnet/conferences
  */
 
 import { api } from './client';
@@ -24,68 +28,71 @@ import type {
 // API 경로 헬퍼
 // =============================================================================
 
-const getBasePath = (projectId: number) => `/adm/project/${projectId}/conferences`;
+const getBasePath = (projectUuid: string) => `/adm/project/${projectUuid}/conferences`;
+const getSmartnetPath = (projectUuid: string) => `/adm/project/${projectUuid}/smartnet/conferences`;
 
 // =============================================================================
 // 1. 총회 (Conference) API
+// 조회: /adm/project/{projectUuid}/conferences
+// 관리: /adm/project/{projectUuid}/smartnet/conferences
 // =============================================================================
 
 /**
  * 총회 목록 조회
  */
 export async function getConferences(
-  projectId: number,
+  projectUuid: string,
   params?: ConferenceListParams
 ): Promise<ApiListData<Conference>> {
-  const response = await api.get(getBasePath(projectId), { params });
+  const response = await api.get(getBasePath(projectUuid), { params });
   return response.data.data;
 }
 
 /**
  * 총회 상세 조회
  */
-export async function getConference(projectId: number, id: number): Promise<Conference> {
-  const response = await api.get(`${getBasePath(projectId)}/${id}`);
+export async function getConference(projectUuid: string, id: number): Promise<Conference> {
+  const response = await api.get(`${getBasePath(projectUuid)}/${id}`);
   return response.data.data;
 }
 
 /**
- * 총회 등록
+ * 총회 등록 (smartnet 모듈)
  */
 export async function createConference(
-  projectId: number,
+  projectUuid: string,
   data: ConferenceRequest
 ): Promise<ApiCreateResponse['data']> {
-  const response = await api.post(getBasePath(projectId), data);
+  const response = await api.post(getSmartnetPath(projectUuid), data);
   return response.data.data;
 }
 
 /**
- * 총회 수정
+ * 총회 수정 (smartnet 모듈)
  */
 export async function updateConference(
-  projectId: number,
+  projectUuid: string,
   id: number,
   data: Partial<ConferenceRequest>
 ): Promise<void> {
-  await api.put(`${getBasePath(projectId)}/${id}`, data);
+  await api.put(`${getSmartnetPath(projectUuid)}/${id}`, data);
 }
 
 /**
- * 총회 삭제
+ * 총회 삭제 (smartnet 모듈)
  */
-export async function deleteConference(projectId: number, id: number): Promise<void> {
-  await api.delete(`${getBasePath(projectId)}/${id}`);
+export async function deleteConference(projectUuid: string, id: number): Promise<void> {
+  await api.delete(`${getSmartnetPath(projectUuid)}/${id}`);
 }
 
 /**
  * 총회 통계 조회
  */
 export async function getConferenceStats(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<ConferenceStats> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/stats`);
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/stats`);
   return response.data.data;
 }
 
@@ -102,27 +109,26 @@ export const getMeetingStats = getConferenceStats;
 
 // 기존 상태 변경 API (향후 구현)
 export async function updateMeetingStatus(
-  projectId: number,
+  projectUuid: string,
   id: number,
   status: 'active' | 'closed' | 'completed'
 ): Promise<void> {
-  await api.put(`${getBasePath(projectId)}/${id}`, { status });
+  await api.put(`${getSmartnetPath(projectUuid)}/${id}`, { status });
 }
 
 // =============================================================================
 // 2. 조합원/투표자 (ConferenceVoter) API
-// 향후 구현 예정 - 현재는 placeholder
 // =============================================================================
 
 /**
  * 투표자 목록 조회
  */
 export async function getConferenceVoters(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   params?: ConferenceVoterListParams
 ): Promise<ApiListData<ConferenceVoter>> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/voters`, { params });
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/voters`, { params });
   return response.data.data;
 }
 
@@ -130,11 +136,11 @@ export async function getConferenceVoters(
  * 투표자 등록
  */
 export async function createConferenceVoter(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   data: ConferenceVoterRequest
 ): Promise<ApiCreateResponse['data']> {
-  const response = await api.post(`${getBasePath(projectId)}/${conferenceId}/voters`, data);
+  const response = await api.post(`${getBasePath(projectUuid)}/${conferenceId}/voters`, data);
   return response.data.data;
 }
 
@@ -142,37 +148,37 @@ export async function createConferenceVoter(
  * 투표자 수정
  */
 export async function updateConferenceVoter(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   voterId: number,
   data: Partial<ConferenceVoterRequest>
 ): Promise<void> {
-  await api.put(`${getBasePath(projectId)}/${conferenceId}/voters/${voterId}`, data);
+  await api.put(`${getBasePath(projectUuid)}/${conferenceId}/voters/${voterId}`, data);
 }
 
 /**
  * 투표자 삭제
  */
 export async function deleteConferenceVoter(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   voterId: number
 ): Promise<void> {
-  await api.delete(`${getBasePath(projectId)}/${conferenceId}/voters/${voterId}`);
+  await api.delete(`${getBasePath(projectUuid)}/${conferenceId}/voters/${voterId}`);
 }
 
 /**
  * 투표자 일괄 등록 (엑셀 업로드)
  */
 export async function importConferenceVoters(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   file: File
 ): Promise<{ imported: number; failed: number }> {
   const formData = new FormData();
   formData.append('file', file);
   const response = await api.post(
-    `${getBasePath(projectId)}/${conferenceId}/voters/upload`,
+    `${getBasePath(projectUuid)}/${conferenceId}/voters/upload`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );
@@ -183,10 +189,10 @@ export async function importConferenceVoters(
  * 투표자 명부 엑셀 다운로드
  */
 export async function exportConferenceVoters(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<Blob> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/voters/excel`, {
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/voters/excel`, {
     responseType: 'blob',
   });
   return response.data;
@@ -202,17 +208,16 @@ export const exportVoteMembers = exportConferenceVoters;
 
 // =============================================================================
 // 3. 안건 (ConferenceAgenda) API
-// 향후 구현 예정 - 현재는 placeholder
 // =============================================================================
 
 /**
  * 안건 목록 조회
  */
 export async function getConferenceAgendas(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<ConferenceAgenda[]> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/agendas`);
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/agendas`);
   return response.data.data;
 }
 
@@ -220,11 +225,11 @@ export async function getConferenceAgendas(
  * 안건 등록
  */
 export async function createConferenceAgenda(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   data: ConferenceAgendaRequest
 ): Promise<ApiCreateResponse['data']> {
-  const response = await api.post(`${getBasePath(projectId)}/${conferenceId}/agendas`, data);
+  const response = await api.post(`${getBasePath(projectUuid)}/${conferenceId}/agendas`, data);
   return response.data.data;
 }
 
@@ -232,23 +237,23 @@ export async function createConferenceAgenda(
  * 안건 수정
  */
 export async function updateConferenceAgenda(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   agendaId: number,
   data: Partial<ConferenceAgendaRequest>
 ): Promise<void> {
-  await api.put(`${getBasePath(projectId)}/${conferenceId}/agendas/${agendaId}`, data);
+  await api.put(`${getBasePath(projectUuid)}/${conferenceId}/agendas/${agendaId}`, data);
 }
 
 /**
  * 안건 삭제
  */
 export async function deleteConferenceAgenda(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   agendaId: number
 ): Promise<void> {
-  await api.delete(`${getBasePath(projectId)}/${conferenceId}/agendas/${agendaId}`);
+  await api.delete(`${getBasePath(projectUuid)}/${conferenceId}/agendas/${agendaId}`);
 }
 
 // 기존 Agenda API 호환 (별칭)
@@ -286,10 +291,10 @@ export type VoteResult = Record<string, number>;
  * 안건 현황 조회 (투표 집계 포함)
  */
 export async function getAgendaStatus(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<AgendaStatusResponse> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/agenda-status`);
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/agenda-status`);
   return response.data.data;
 }
 
@@ -301,11 +306,11 @@ export async function getAgendaStatus(
  * 투표 내역 목록 조회
  */
 export async function getVoteRecords(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   params?: VoteRecordListParams
 ): Promise<ApiListData<VoteRecord>> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/vote-records`, { params });
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/vote-records`, { params });
   return response.data.data;
 }
 
@@ -313,11 +318,11 @@ export async function getVoteRecords(
  * 투표 내역 상세 조회
  */
 export async function getVoteRecord(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   recordId: number
 ): Promise<VoteRecord> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/vote-records/${recordId}`);
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/vote-records/${recordId}`);
   return response.data.data;
 }
 
@@ -325,10 +330,10 @@ export async function getVoteRecord(
  * 투표 내역 엑셀 다운로드
  */
 export async function exportVoteRecords(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<Blob> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/vote-records/excel`, {
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/vote-records/excel`, {
     responseType: 'blob',
   });
   return response.data;
@@ -342,11 +347,11 @@ export async function exportVoteRecords(
  * 서면투표 등록
  */
 export async function registerPaperVote(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   data: PaperVoteRequest
 ): Promise<ApiCreateResponse['data']> {
-  const response = await api.post(`${getBasePath(projectId)}/${conferenceId}/paper-votes`, data);
+  const response = await api.post(`${getBasePath(projectUuid)}/${conferenceId}/paper-votes`, data);
   return response.data.data;
 }
 
@@ -354,12 +359,12 @@ export async function registerPaperVote(
  * 서면투표 수정
  */
 export async function updatePaperVote(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number,
   voterId: number,
   data: PaperVoteRequest
 ): Promise<void> {
-  await api.put(`${getBasePath(projectId)}/${conferenceId}/paper-votes/${voterId}`, data);
+  await api.put(`${getBasePath(projectUuid)}/${conferenceId}/paper-votes/${voterId}`, data);
 }
 
 // =============================================================================
@@ -370,9 +375,9 @@ export async function updatePaperVote(
  * 동 목록 조회 (투표자 명부 기준)
  */
 export async function getVoteDongs(
-  projectId: number,
+  projectUuid: string,
   conferenceId: number
 ): Promise<number[]> {
-  const response = await api.get(`${getBasePath(projectId)}/${conferenceId}/voters/dongs`);
+  const response = await api.get(`${getBasePath(projectUuid)}/${conferenceId}/voters/dongs`);
   return response.data.data;
 }

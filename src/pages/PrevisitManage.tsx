@@ -23,16 +23,16 @@ import {
   useDeletePrevisit,
 } from '@/src/hooks/usePrevisit';
 import { useUploadFile } from '@/src/hooks/useReservation';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import type { Previsit, PrevisitRequest } from '@/src/types/previsit.types';
 import { generatePrevisitUrl } from '@/src/lib/utils/hash';
 
 // 방문예약 시스템 URL (환경변수로 관리 권장)
 const RESERVATION_BASE_URL = import.meta.env.VITE_RESERVATION_URL || 'https://customer.compass1998.com';
 
-// 현재 프로젝트 ID (추후 프로젝트 선택 기능 구현 시 동적으로 변경)
-const PROJECT_ID = 1;
-
 export default function PrevisitManagePage() {
+  const { projectUuid } = useCurrentProject();
+
   // UI 상태
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -45,7 +45,7 @@ export default function PrevisitManagePage() {
   });
 
   // API 훅
-  const { data: previsitData, isLoading, error } = usePrevisits(PROJECT_ID);
+  const { data: previsitData, isLoading, error } = usePrevisits(projectUuid);
   const createMutation = useCreatePrevisit();
   const deleteMutation = useDeletePrevisit();
   const uploadMutation = useUploadFile();
@@ -74,7 +74,7 @@ export default function PrevisitManagePage() {
 
       // 사전방문 생성
       await createMutation.mutateAsync({
-        projectId: PROJECT_ID,
+        projectUuid,
         data: {
           ...data,
           image_file_id: imageFileId,
@@ -109,7 +109,7 @@ export default function PrevisitManagePage() {
     if (!deleteDialog.previsit) return;
 
     try {
-      await deleteMutation.mutateAsync({ projectId: PROJECT_ID, id: deleteDialog.previsit.id });
+      await deleteMutation.mutateAsync({ projectUuid, id: deleteDialog.previsit.id });
       setSnackbar({ open: true, message: '삭제되었습니다.', severity: 'success' });
     } catch (err) {
       console.error('삭제 실패:', err);

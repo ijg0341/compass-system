@@ -9,15 +9,17 @@ import AdminLayout from '@/src/components/layout/AdminLayout'
 import Login from '@/src/pages/Login'
 import Dashboard from '@/src/pages/Dashboard'
 import ASManageList from '@/src/pages/ASManageList'
+import ASManagePage from '@/src/pages/ASManagePage'
 import SmartnetList from '@/src/pages/SmartnetList'
 import SmartnetCreate from '@/src/pages/SmartnetCreate'
 import MemberResident from '@/src/pages/MemberResident'
+import UserManagement from '@/src/pages/UserManagement'
 import ResidenceMove from '@/src/pages/ResidenceMove'
 import ResidenceVisit from '@/src/pages/ResidenceVisit'
 import PrevisitManage from '@/src/pages/PrevisitManage'
 import PrevisitReservation from '@/src/pages/PrevisitReservation'
 import PrevisitRegister from '@/src/pages/PrevisitRegister'
-import DonghoManage from '@/src/pages/DonghoManage'
+import BaseCodeManagePage from '@/src/pages/BaseCodeManagePage'
 import VoteMeetingList from '@/src/pages/VoteMeetingList'
 import VoteMeetingDetail from '@/src/pages/VoteMeetingDetail'
 import VoteMeetingCreate from '@/src/pages/VoteMeetingCreate'
@@ -74,6 +76,13 @@ function App() {
               </AdminLayout>
             </ProtectedRoute>
           } />
+          <Route path="/residence/as" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ASManagePage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
 
           {/* 통계 > A/S */}
           <Route path="/statistics/as" element={
@@ -84,7 +93,14 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* 사용자 관리 > 입주자 관리 */}
+          {/* 사용자 관리 */}
+          <Route path="/user" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UserManagement />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/user/resident" element={
             <ProtectedRoute>
               <AdminLayout>
@@ -97,7 +113,14 @@ function App() {
           <Route path="/base-code/dongho" element={
             <ProtectedRoute>
               <AdminLayout>
-                <DonghoManage />
+                <BaseCodeManagePage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/base-code/defect-type" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <BaseCodeManagePage />
               </AdminLayout>
             </ProtectedRoute>
           } />

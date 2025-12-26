@@ -1,10 +1,32 @@
-
-import { AppBar, Toolbar, Typography, Box, IconButton, Badge, Tooltip, Switch, FormControlLabel } from '@mui/material';
-import { Notifications, AccountCircle } from '@mui/icons-material';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  Badge,
+  Tooltip,
+  Switch,
+  FormControlLabel,
+  Select,
+  MenuItem,
+  type SelectChangeEvent,
+} from '@mui/material';
+import { Notifications, AccountCircle, Business } from '@mui/icons-material';
 import { useMenuStore } from '@/src/stores/menuStore';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
+import { useProjectUrlSync } from '@/src/hooks/useProjectUrlSync';
 
 export default function HeaderBar() {
   const { isCompact, setIsCompact } = useMenuStore();
+  const { projects, projectUuid, projectName } = useCurrentProject();
+  const { switchProject } = useProjectUrlSync();
+
+  const handleProjectChange = (event: SelectChangeEvent<string>) => {
+    switchProject(event.target.value);
+  };
+
+  const hasMultipleProjects = projects.length > 1;
 
   return (
     <AppBar
@@ -38,19 +60,45 @@ export default function HeaderBar() {
           />
         </Box>
 
-        {/* 중앙 타이틀 */}
-        <Typography
-          variant="body1"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            fontWeight: 500,
-            color: 'text.secondary',
-            fontSize: '0.875rem',
-          }}
-        >
-          통합 관리 시스템
-        </Typography>
+        {/* 프로젝트 선택 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+          <Business fontSize="small" sx={{ color: 'text.secondary' }} />
+          {hasMultipleProjects ? (
+            <Select
+              value={projectUuid}
+              onChange={handleProjectChange}
+              size="small"
+              variant="standard"
+              sx={{
+                minWidth: 180,
+                '& .MuiSelect-select': {
+                  py: 0.5,
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                },
+                '&:before, &:after': {
+                  display: 'none',
+                },
+              }}
+            >
+              {projects.map((p) => (
+                <MenuItem key={p.uuid} value={p.uuid}>
+                  {p.name}
+                </MenuItem>
+              ))}
+            </Select>
+          ) : (
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.875rem',
+              }}
+            >
+              {projectName || '프로젝트 없음'}
+            </Typography>
+          )}
+        </Box>
 
         {/* 우측 컨트롤 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

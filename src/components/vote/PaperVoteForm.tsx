@@ -22,7 +22,7 @@ import { useVoteMembers, useAgendas, useRegisterPaperVote } from '@/src/hooks/us
 import type { VoteMember, Agenda } from '@/src/types/vote.types';
 
 interface PaperVoteFormProps {
-  projectId: number;
+  projectUuid: string;
   meetingId: number;
 }
 
@@ -31,7 +31,7 @@ interface VoteSelection {
   answer: string;
 }
 
-export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormProps) {
+export default function PaperVoteForm({ projectUuid, meetingId }: PaperVoteFormProps) {
   // 선택된 조합원
   const [selectedMember, setSelectedMember] = useState<VoteMember | null>(null);
 
@@ -47,11 +47,11 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
 
   // API 훅
   const { data: membersData, isLoading: isMembersLoading } = useVoteMembers(
-    projectId,
+    projectUuid,
     meetingId,
     { has_voted: false }
   );
-  const { data: agendas, isLoading: isAgendasLoading } = useAgendas(projectId, meetingId);
+  const { data: agendas, isLoading: isAgendasLoading } = useAgendas(projectUuid, meetingId);
   const registerMutation = useRegisterPaperVote();
 
   // 미투표 조합원 목록
@@ -92,7 +92,7 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
 
     try {
       await registerMutation.mutateAsync({
-        projectId,
+        projectUuid,
         meetingId,
         data: {
           conference_voter_id: selectedMember.id,
@@ -109,7 +109,7 @@ export default function PaperVoteForm({ projectId, meetingId }: PaperVoteFormPro
     } catch {
       setSnackbar({ open: true, message: '등록에 실패했습니다.', severity: 'error' });
     }
-  }, [selectedMember, votes, registerMutation, projectId, meetingId]);
+  }, [selectedMember, votes, registerMutation, projectUuid, meetingId]);
 
   // 안건별 투표 입력 렌더링
   const renderAgendaVote = (agenda: Agenda, index: number) => {

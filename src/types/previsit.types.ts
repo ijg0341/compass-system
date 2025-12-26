@@ -1,6 +1,6 @@
 /**
  * 사전방문 관련 타입 정의
- * API 문서 기준: 2025-12-04
+ * API 문서 기준: 2025-12-24
  */
 
 import type { ApiDateResponse } from './api';
@@ -13,7 +13,7 @@ import type { ApiDateResponse } from './api';
 export interface Previsit {
   id: number;
   uuid: string;               // UUID (고객용 URL 접근에 사용)
-  project_id: number;
+  project_uuid: string;       // 프로젝트 UUID
   name: string;
   date_begin: string | ApiDateResponse;  // YYYY-MM-DD 또는 API 날짜 객체
   date_end: string | ApiDateResponse;    // YYYY-MM-DD 또는 API 날짜 객체
@@ -24,7 +24,7 @@ export interface Previsit {
   image_file_id: number | null;
 }
 
-/** 사전방문 행사 등록/수정 요청 (project_id는 URL path로 전달) */
+/** 사전방문 행사 등록/수정 요청 (project_uuid는 URL path로 전달) */
 export interface PrevisitRequest {
   name: string;
   date_begin: string;         // YYYY-MM-DD
