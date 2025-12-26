@@ -46,7 +46,11 @@ const IMPLEMENTED_PAGES = [
   '/pre-visit/reservation', // PrevisitReservation.tsx
   '/residence/move',        // ResidenceMove.tsx
   '/residence/as',          // ASManagePage.tsx (A/S 관리)
+  '/units/list',            // HouseholdList.tsx (세대현황 - 세대목록)
+  '/units/floor-plan',      // HouseholdFloorPlan.tsx (세대현황 - 현황입면도)
   '/statistics/as',         // ASManageList.tsx
+  '/community/notice',      // CommunityNotice.tsx (커뮤니티 - 공지사항)
+  '/community/document',    // CommunityDocument.tsx (커뮤니티 - 자료실)
   '/user',                  // UserManagement.tsx (사용자 관리 - 탭 통합)
   '/user/resident',         // MemberResident.tsx
   '/smartnet/pre-visit',    // PrevisitManage.tsx
@@ -83,7 +87,8 @@ const menuItems: NavItem[] = [
     icon: Apartment,
     path: '/units',
     subMenu: [
-      { text: '세대목록', path: '/units/list' },
+      { text: '세대현황', path: '/units/list' },
+      { text: '현황입면도', path: '/units/floor-plan' },
     ]
   },
   {
@@ -102,8 +107,8 @@ const menuItems: NavItem[] = [
     icon: Forum,
     path: '/community',
     subMenu: [
-      { text: '공지', path: '/community/notice' },
-      { text: '자료실', path: '/community/resources' },
+      { text: '공지사항', path: '/community/notice' },
+      { text: '자료실', path: '/community/document' },
     ]
   },
   {

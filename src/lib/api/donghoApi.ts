@@ -7,8 +7,18 @@
  * - 관리용: /adm/project/{projectUuid}/donghos-codes
  */
 import { api } from './client';
-import type { ApiResponse, ApiListData, ApiCreateResponse } from '@/src/types/api';
-import type { Dongho, DonghoRequest, DonghoListParams } from '@/src/types/dongho.types';
+import type { ApiResponse, ApiListData, ApiPageListData, ApiCreateResponse } from '@/src/types/api';
+import type {
+  Dongho,
+  DonghoRequest,
+  DonghoListParams,
+  HouseholdStatus,
+  HouseholdStatusParams,
+  FloorPlanData,
+  HouseholdDetail,
+  HouseholdUpdateRequest,
+  VisitHistory,
+} from '@/src/types/dongho.types';
 
 // =============================================================================
 // API 경로 헬퍼
@@ -146,4 +156,115 @@ export async function uploadDonghosExcel(
     }
   );
   return response.data.data;
+}
+
+// =============================================================================
+// 세대현황 API (CP-SA-04-001, CP-SA-04-002)
+// Base URL: /adm/project/{projectUuid}/donghos
+// =============================================================================
+
+/**
+ * 세대현황 목록 조회
+ * 필터: dong, ho, contractor_name, date_begin, date_end, tab(key/meter/give)
+ */
+export async function getHouseholdStatus(
+  projectUuid: string,
+  params?: HouseholdStatusParams
+): Promise<ApiPageListData<HouseholdStatus>> {
+  const response = await api.get<ApiResponse<ApiPageListData<HouseholdStatus>>>(
+    `${getAdminBasePath(projectUuid)}/donghos/household-status`,
+    { params }
+  );
+  return response.data.data;
+}
+
+/**
+ * 세대현황 엑셀 다운로드
+ */
+export async function downloadHouseholdStatusExcel(
+  projectUuid: string,
+  params?: HouseholdStatusParams
+): Promise<void> {
+  const response = await api.get(
+    `${getAdminBasePath(projectUuid)}/donghos/household-status/excel`,
+    {
+      params,
+      responseType: 'blob',
+    }
+  );
+
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+
+  const contentDisposition = response.headers['content-disposition'];
+  const filename = contentDisposition
+    ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+    : `household_status_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+/**
+ * 현황입면도 조회
+ * 동별 -> 라인별(호 끝 2자리) 그룹핑
+ */
+export async function getFloorPlan(projectUuid: string): Promise<FloorPlanData> {
+  const response = await api.get<ApiResponse<FloorPlanData>>(
+    `${getAdminBasePath(projectUuid)}/donghos/floor-plan`
+  );
+  return response.data.data;
+}
+
+// =============================================================================
+// 세대정보 상세 API (CP-SA-99-001)
+// =============================================================================
+
+/**
+ * 세대정보 상세 조회
+ */
+export async function getHouseholdDetail(
+  projectUuid: string,
+  id: number
+): Promise<HouseholdDetail> {
+  const response = await api.get<ApiResponse<HouseholdDetail>>(
+    `${getAdminBasePath(projectUuid)}/donghos/${id}`
+  );
+  return response.data.data;
+}
+
+/**
+ * 세대정보 수정
+ */
+export async function updateHousehold(
+  projectUuid: string,
+  id: number,
+  data: HouseholdUpdateRequest
+): Promise<void> {
+  await api.put(`${getAdminBasePath(projectUuid)}/donghos/${id}`, data);
+}
+
+// =============================================================================
+// 입주 방문이력 API (CP-SA-99-002)
+// =============================================================================
+
+/**
+ * 특정 세대의 입주 방문이력 조회
+ */
+export async function getVisitHistory(
+  projectUuid: string,
+  donghoId: number
+): Promise<VisitHistory[]> {
+  const response = await api.get<ApiResponse<{ list: VisitHistory[] }>>(
+    `${getAdminBasePath(projectUuid)}/visit`,
+    { params: { dongho_id: donghoId } }
+  );
+  return response.data.data.list;
 }

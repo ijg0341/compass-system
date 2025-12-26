@@ -11,7 +11,7 @@ import Dashboard from '@/src/pages/Dashboard'
 import ASManageList from '@/src/pages/ASManageList'
 import ASManagePage from '@/src/pages/ASManagePage'
 import SmartnetList from '@/src/pages/SmartnetList'
-import SmartnetCreate from '@/src/pages/SmartnetCreate'
+import SmartnetMoveCreate from '@/src/pages/SmartnetMoveCreate'
 import MemberResident from '@/src/pages/MemberResident'
 import UserManagement from '@/src/pages/UserManagement'
 import ResidenceMove from '@/src/pages/ResidenceMove'
@@ -23,6 +23,14 @@ import BaseCodeManagePage from '@/src/pages/BaseCodeManagePage'
 import VoteMeetingList from '@/src/pages/VoteMeetingList'
 import VoteMeetingDetail from '@/src/pages/VoteMeetingDetail'
 import VoteMeetingCreate from '@/src/pages/VoteMeetingCreate'
+import HouseholdList from '@/src/pages/HouseholdList'
+import HouseholdFloorPlan from '@/src/pages/HouseholdFloorPlan'
+import CommunityNotice from '@/src/pages/CommunityNotice'
+import CommunityNoticeDetail from '@/src/pages/CommunityNoticeDetail'
+import CommunityNoticeForm from '@/src/pages/CommunityNoticeForm'
+import CommunityDocument from '@/src/pages/CommunityDocument'
+import CommunityDocumentDetail from '@/src/pages/CommunityDocumentDetail'
+import CommunityDocumentForm from '@/src/pages/CommunityDocumentForm'
 
 function App() {
   return (
@@ -69,6 +77,13 @@ function App() {
           } />
 
           {/* 입주관리 */}
+          <Route path="/residence/visit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ResidenceVisit />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/residence/move" element={
             <ProtectedRoute>
               <AdminLayout>
@@ -80,6 +95,22 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <ASManagePage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 세대현황 */}
+          <Route path="/units/list" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <HouseholdList />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/units/floor-plan" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <HouseholdFloorPlan />
               </AdminLayout>
             </ProtectedRoute>
           } />
@@ -143,7 +174,7 @@ function App() {
           <Route path="/smartnet/move" element={
             <ProtectedRoute>
               <AdminLayout>
-                <SmartnetCreate />
+                <SmartnetMoveCreate />
               </AdminLayout>
             </ProtectedRoute>
           } />
@@ -167,6 +198,66 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <VoteMeetingDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 커뮤니티 - 공지사항 */}
+          <Route path="/community/notice" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityNotice />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/notice/create" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityNoticeForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/notice/:id" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityNoticeDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/notice/:id/edit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityNoticeForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 커뮤니티 - 자료실 */}
+          <Route path="/community/document" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityDocument />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/document/create" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityDocumentForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/document/:id" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityDocumentDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/community/document/:id/edit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityDocumentForm />
               </AdminLayout>
             </ProtectedRoute>
           } />

@@ -16,11 +16,20 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-// 목록 응답 데이터
+// 목록 응답 데이터 (offset 기반)
 export interface ApiListData<T> {
   offset: number;
   limit: number;
   total: number;
+  list: T[];
+}
+
+// 목록 응답 데이터 (page 기반)
+export interface ApiPageListData<T> {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
   list: T[];
 }
 

@@ -1,143 +1,299 @@
-import { useState, useMemo } from 'react';
-import { Box, Typography, Tabs, Tab } from '@mui/material';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import StatsCards from '@/src/components/move-reservation/StatsCards';
-import FiltersBar from '@/src/components/move-reservation/FiltersBar';
-import ReservationTable from '@/src/components/move-reservation/ReservationTable';
-import DetailDrawer from '@/src/components/move-reservation/DetailDrawer';
-import CalendarView from '@/src/components/move-reservation/CalendarView';
-import type { MoveReservationFilter, AdminMoveReservation } from '@/src/types/reservation';
+/**
+ * 이사예약 페이지
+ * 화면 ID: CP-SA-03-002
+ */
+import { useState, useCallback, useMemo } from 'react';
 import {
-  mockMoveReservations,
-  generateMoveReservationStats,
-  filterMoveReservations,
-} from '@/src/lib/mockData/reservationData';
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Paper,
+  Alert,
+  Snackbar,
+  CircularProgress,
+} from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
+import FilterContainer, { FilterRow } from '@/src/components/common/FilterContainer';
+import DataTable, { type Column } from '@/src/components/common/DataTable';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
+import { useMoveReservations, useDownloadMoveExcel } from '@/src/hooks/useMove';
+import { getCommonDongs } from '@/src/lib/api/commonApi';
+import type { MoveReservation, MoveReservationListParams } from '@/src/lib/api/moveApi';
+import HouseholdDetailDrawer from '@/src/components/visit/HouseholdDetailDrawer';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
+// 요일 변환 함수
+const getDayOfWeek = (dateStr: string): string => {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const date = new Date(dateStr);
+  return days[date.getDay()];
+};
+
+// 필터 상태
+interface FilterState {
+  dong: string;
+  ho: string;
+  residentName: string;
+  residentDate: string;
+  reservationDate: string;
 }
 
-function TabPanel({ children, value, index }: TabPanelProps) {
-  return (
-    <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box>{children}</Box>}
-    </div>
-  );
-}
+const initialFilterState: FilterState = {
+  dong: '',
+  ho: '',
+  residentName: '',
+  residentDate: '',
+  reservationDate: '',
+};
 
-export default function MoveReservationPage() {
-  const [filters, setFilters] = useState<MoveReservationFilter>({});
-  const [selectedReservation, setSelectedReservation] = useState<AdminMoveReservation | null>(
-    null
-  );
-  const [drawerOpen, setDrawerOpen] = useState(false);
+export default function ResidenceMovePage() {
+  const { projectUuid } = useCurrentProject();
+
+  // 상태
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [tabValue, setTabValue] = useState(0);
+  const [dongs, setDongs] = useState<string[]>([]);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  // 통계 데이터
-  const stats = useMemo(() => generateMoveReservationStats(), []);
+  // 모달 상태
+  const [selectedReservation, setSelectedReservation] = useState<MoveReservation | null>(null);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
-  // 필터링된 데이터
-  const filteredData = useMemo(() => {
-    return filterMoveReservations(mockMoveReservations, filters);
-  }, [filters]);
+  // API 훅
+  const listParams: MoveReservationListParams = useMemo(() => ({
+    page: page + 1,
+    limit: rowsPerPage,
+    ...(filters.dong && { dong: filters.dong }),
+    ...(filters.ho && { ho: filters.ho }),
+    ...(filters.residentName && { resident_name: filters.residentName }),
+    ...(filters.residentDate && { resident_date: filters.residentDate }),
+    ...(filters.reservationDate && { reservation_date: filters.reservationDate }),
+  }), [page, rowsPerPage, filters]);
 
-  const handleFiltersChange = (newFilters: MoveReservationFilter) => {
-    setFilters(newFilters);
-    setPage(0);
-  };
+  const { data: moveData, isLoading, refetch } = useMoveReservations(projectUuid, listParams);
+  const downloadMutation = useDownloadMoveExcel();
 
-  const handleRowClick = (reservation: AdminMoveReservation) => {
+  // 동 목록 로드
+  const loadDongs = useCallback(async () => {
+    if (!projectUuid) return;
+    try {
+      const data = await getCommonDongs(projectUuid);
+      setDongs(data);
+    } catch (error) {
+      console.error('동 목록 로드 실패:', error);
+    }
+  }, [projectUuid]);
+
+  // 컴포넌트 마운트 시 동 목록 로드
+  useState(() => {
+    loadDongs();
+  });
+
+  // 엑셀 다운로드
+  const handleDownloadExcel = useCallback(async () => {
+    if (!projectUuid) return;
+    try {
+      await downloadMutation.mutateAsync({ projectUuid, params: filters });
+      setSnackbar({ open: true, message: '엑셀 다운로드가 시작되었습니다.', severity: 'success' });
+    } catch (error) {
+      console.error('엑셀 다운로드 실패:', error);
+      setSnackbar({ open: true, message: '엑셀 다운로드에 실패했습니다.', severity: 'error' });
+    }
+  }, [projectUuid, filters, downloadMutation]);
+
+  // 행 클릭 시 세대상세 표시
+  const handleRowClick = useCallback((reservation: MoveReservation) => {
     setSelectedReservation(reservation);
-    setDrawerOpen(true);
-  };
+    setDetailDrawerOpen(true);
+  }, []);
 
-  const handleDrawerClose = () => {
-    setDrawerOpen(false);
-  };
+  // 필터 초기화
+  const handleResetFilters = useCallback(() => {
+    setFilters(initialFilterState);
+    setPage(0);
+  }, []);
 
-  const handleStatusChange = (id: string, status: 'cancelled', reason: string) => {
-    console.log(`Status change for ${id}: ${status}, reason: ${reason}`);
-    alert(`예약 ${id}이(가) 취소되었습니다. 사유: ${reason}\n(실제 구현 필요)`);
-    setDrawerOpen(false);
-  };
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+  // 테이블 컬럼 정의
+  const columns: Column<MoveReservation>[] = useMemo(() => [
+    { id: 'dong', label: '동', minWidth: 80 },
+    { id: 'ho', label: '호', minWidth: 80 },
+    { id: 'reservation_evline', label: '예약 라인', minWidth: 100 },
+    { id: 'resident_name', label: '입주자 성명', minWidth: 100, render: (row) => row.resident_name || '-' },
+    { id: 'resident_phone', label: '입주자 연락처', minWidth: 120, render: (row) => row.resident_phone || '-' },
+    { id: 'resident_date', label: '입주일', minWidth: 100, render: (row) => row.resident_date || '-' },
+    { id: 'reservation_date', label: '예약일자', minWidth: 100 },
+    {
+      id: 'day_of_week',
+      label: '요일',
+      minWidth: 60,
+      align: 'center',
+      render: (row) => row.reservation_date ? getDayOfWeek(row.reservation_date) : '-',
+    },
+    {
+      id: 'reservation_time',
+      label: '시간',
+      minWidth: 80,
+      render: (row) => row.reservation_time?.slice(0, 5) || '-',
+    },
+    {
+      id: 'created_at',
+      label: '신청일시',
+      minWidth: 140,
+      render: (row) => row.created_at?.slice(0, 16).replace('T', ' ') || '-',
+    },
+  ], []);
 
   return (
     <Box>
-        {/* 헤더 */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" fontWeight={700}>
-            이사예약 관리
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            총 {filteredData.length}건의 예약
-          </Typography>
-        </Box>
+      {/* 페이지 헤더 */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight={700}>
+          이사예약
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          입주관리 &gt; 이사예약
+        </Typography>
+      </Box>
 
-        {/* 통계 카드 */}
-        <StatsCards stats={stats} />
-
-        {/* 뷰 전환 탭 */}
-        <Box sx={{ mb: 2 }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTabs-indicator': {
-                backgroundColor: 'primary.main',
-              },
-            }}
+      {/* 이사예약 목록 */}
+      <Paper
+        sx={{
+          p: 2,
+          background: (theme) =>
+            theme.palette.mode === 'light'
+              ? 'rgba(255, 255, 255, 0.7)'
+              : 'rgba(26, 26, 26, 0.7)',
+          backdropFilter: 'blur(10px)',
+          border: (theme) =>
+            theme.palette.mode === 'light'
+              ? '1px solid rgba(0, 0, 0, 0.1)'
+              : '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" fontWeight={600}>
+            이사예약
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownloadExcel}
+            disabled={downloadMutation.isPending}
           >
-            <Tab
-              icon={<ViewListIcon />}
-              iconPosition="start"
-              label="목록 뷰"
-              sx={{ minHeight: 48 }}
-            />
-            <Tab
-              icon={<CalendarMonthIcon />}
-              iconPosition="start"
-              label="달력 뷰"
-              sx={{ minHeight: 48 }}
-            />
-          </Tabs>
+            엑셀 다운로드
+          </Button>
         </Box>
 
-        {/* 필터 영역 */}
-        <FiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
+        {/* 필터 */}
+        <FilterContainer
+          onReset={handleResetFilters}
+          onApply={() => {
+            setPage(0);
+            refetch();
+          }}
+        >
+          <FilterRow isLast>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>동 선택</InputLabel>
+              <Select
+                value={filters.dong}
+                label="동 선택"
+                onChange={(e) => setFilters(prev => ({ ...prev, dong: e.target.value }))}
+              >
+                <MenuItem value="">전체</MenuItem>
+                {dongs.map((dong) => (
+                  <MenuItem key={dong} value={dong}>{dong}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>호 선택</InputLabel>
+              <Select
+                value={filters.ho}
+                label="호 선택"
+                onChange={(e) => setFilters(prev => ({ ...prev, ho: e.target.value }))}
+              >
+                <MenuItem value="">전체</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="입주자 성명"
+              size="small"
+              value={filters.residentName}
+              onChange={(e) => setFilters(prev => ({ ...prev, residentName: e.target.value }))}
+              sx={{ minWidth: 120 }}
+            />
+            <TextField
+              label="입주일"
+              type="date"
+              size="small"
+              value={filters.residentDate}
+              onChange={(e) => setFilters(prev => ({ ...prev, residentDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              label="예약일자"
+              type="date"
+              size="small"
+              value={filters.reservationDate}
+              onChange={(e) => setFilters(prev => ({ ...prev, reservationDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 150 }}
+            />
+          </FilterRow>
+        </FilterContainer>
 
-        {/* 목록 뷰 */}
-        <TabPanel value={tabValue} index={0}>
-          <ReservationTable
-            data={filteredData}
-            onRowClick={handleRowClick}
+        {/* 테이블 */}
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={moveData?.list || []}
+            total={moveData?.total || 0}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={setPage}
             onRowsPerPageChange={setRowsPerPage}
+            onRowClick={handleRowClick}
+            getRowKey={(row) => row.id}
           />
-        </TabPanel>
+        )}
+      </Paper>
 
-        {/* 달력 뷰 */}
-        <TabPanel value={tabValue} index={1}>
-          <CalendarView reservations={filteredData} onReservationClick={handleRowClick} />
-        </TabPanel>
-
-        {/* 상세 드로어 */}
-        <DetailDrawer
-          open={drawerOpen}
-          reservation={selectedReservation}
-          onClose={handleDrawerClose}
-          onStatusChange={handleStatusChange}
+      {/* 세대상세 Drawer */}
+      {selectedReservation && (
+        <HouseholdDetailDrawer
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
+          donghoId={selectedReservation.dongho_id}
         />
+      )}
+
+      {/* 스낵바 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
