@@ -30,6 +30,7 @@ import {
 import { CloudUpload, Delete } from '@mui/icons-material';
 import { useNotice, useCreateNotice, useUpdateNotice } from '@/src/hooks/useBoard';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
+import { uploadFile } from '@/src/lib/api/reservationApi';
 import type { BoardPostRequest, BoardFile } from '@/src/types/board.types';
 
 // 셀 스타일
@@ -88,14 +89,29 @@ export default function CommunityNoticeFormPage() {
   // 기존 데이터 로드 (수정 모드)
   useEffect(() => {
     if (isEditMode && post) {
+      // board_files가 문자열로 올 수 있으므로 방어적으로 처리
+      let boardFiles: BoardFile[] = [];
+      if (post.board_files) {
+        if (Array.isArray(post.board_files)) {
+          boardFiles = post.board_files;
+        } else if (typeof post.board_files === 'string') {
+          try {
+            const parsed = JSON.parse(post.board_files);
+            boardFiles = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            boardFiles = [];
+          }
+        }
+      }
+
       setFormData({
         board_category_id: post.board_category_id,
         board_subject: post.board_subject,
         board_text: post.board_text,
         board_hidden: post.board_hidden,
-        board_files: post.board_files?.map((f) => f.id) || [],
+        board_files: boardFiles.map((f) => f.id),
       });
-      setExistingFiles(post.board_files || []);
+      setExistingFiles(boardFiles);
     }
   }, [isEditMode, post]);
 
@@ -145,12 +161,23 @@ export default function CommunityNoticeFormPage() {
   // 저장 확인
   const handleConfirmSave = useCallback(async () => {
     try {
-      // TODO: 파일 업로드 후 board_files에 ID 추가
+      // 새 파일 업로드
+      const uploadedFileIds: number[] = [];
+      for (const file of newFiles) {
+        const response = await uploadFile(file, {
+          projectUuid,
+          fileCategory: 'board_notice',
+        });
+        uploadedFileIds.push(response.id);
+      }
+
+      // 기존 파일 중 삭제하지 않은 것 + 새로 업로드한 파일
       const submitData = {
         ...formData,
-        board_files: existingFiles
-          .filter((f) => !filesToDelete.includes(f.id))
-          .map((f) => f.id),
+        board_files: [
+          ...existingFiles.filter((f) => !filesToDelete.includes(f.id)).map((f) => f.id),
+          ...uploadedFileIds,
+        ],
       };
 
       if (isEditMode) {
@@ -174,6 +201,7 @@ export default function CommunityNoticeFormPage() {
     formData,
     existingFiles,
     filesToDelete,
+    newFiles,
     isEditMode,
     updateMutation,
     createMutation,
@@ -256,7 +284,7 @@ export default function CommunityNoticeFormPage() {
                         key={file.id}
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
                       >
-                        <Link href={`/api/files/${file.uuid}`} target="_blank">
+                        <Link href={file.url} target="_blank">
                           {file.original_name} ({formatFileSize(file.file_size)})
                         </Link>
                         <FormControlLabel

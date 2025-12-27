@@ -238,6 +238,7 @@ export interface FileUploadResponse {
 export async function uploadFile(
   file: File,
   options?: {
+    projectUuid?: string;
     entityType?: string;
     entityId?: number;
     fileCategory?: string;
@@ -247,6 +248,7 @@ export async function uploadFile(
   const formData = new FormData();
   formData.append('file', file);
 
+  if (options?.projectUuid) formData.append('project_uuid', options.projectUuid);
   if (options?.entityType) formData.append('entity_type', options.entityType);
   if (options?.entityId) formData.append('entity_id', String(options.entityId));
   if (options?.fileCategory) formData.append('file_category', options.fileCategory);

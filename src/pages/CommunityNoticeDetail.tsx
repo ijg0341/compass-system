@@ -146,12 +146,12 @@ export default function CommunityNoticeDetailPage() {
             <TableRow>
               <TableCell sx={labelCellSx}>첨부파일</TableCell>
               <TableCell colSpan={3} sx={valueCellSx}>
-                {post.board_files && post.board_files.length > 0 ? (
+                {Array.isArray(post.board_files) && post.board_files.length > 0 ? (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {post.board_files.map((file) => (
                       <Link
                         key={file.id}
-                        href={`/api/files/${file.uuid}`}
+                        href={file.url}
                         target="_blank"
                         rel="noopener"
                         sx={{ cursor: 'pointer' }}
