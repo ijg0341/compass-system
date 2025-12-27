@@ -146,9 +146,9 @@ export default function CommunityDocumentDetailPage() {
             <TableRow>
               <TableCell sx={labelCellSx}>첨부파일1</TableCell>
               <TableCell colSpan={3} sx={valueCellSx}>
-                {post.board_files && post.board_files.length > 0 ? (
+                {Array.isArray(post.board_files) && post.board_files.length > 0 ? (
                   <Link
-                    href={`/api/files/${post.board_files[0].uuid}`}
+                    href={post.board_files[0].url}
                     target="_blank"
                     rel="noopener"
                     sx={{ cursor: 'pointer' }}
@@ -164,9 +164,9 @@ export default function CommunityDocumentDetailPage() {
             <TableRow>
               <TableCell sx={labelCellSx}>첨부파일2</TableCell>
               <TableCell colSpan={3} sx={valueCellSx}>
-                {post.board_files && post.board_files.length > 1 ? (
+                {Array.isArray(post.board_files) && post.board_files.length > 1 ? (
                   <Link
-                    href={`/api/files/${post.board_files[1].uuid}`}
+                    href={post.board_files[1].url}
                     target="_blank"
                     rel="noopener"
                     sx={{ cursor: 'pointer' }}

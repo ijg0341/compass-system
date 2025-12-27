@@ -23,6 +23,7 @@ export interface BoardFile {
   original_name: string;
   file_size: number;
   mime_type: string;
+  url: string;
 }
 
 /** API 날짜 응답 형식 */
