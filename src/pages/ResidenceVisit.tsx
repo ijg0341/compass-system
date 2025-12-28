@@ -29,7 +29,9 @@ import DataTable, { type Column } from '@/src/components/common/DataTable';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useVisits, useCreateVisit, useDownloadVisitExcel, useUploadVisitExcel } from '@/src/hooks/useVisit';
 import { getCommonDongs, getCommonDonghos, type CommonDongho } from '@/src/lib/api/commonApi';
+import { getHouseholdDetail } from '@/src/lib/api/donghoApi';
 import { VISIT_TYPES, VISIT_PURPOSES, type Visit, type VisitListParams } from '@/src/lib/api/visitApi';
+import type { HouseholdDetail } from '@/src/types/dongho.types';
 import VisitHistoryModal from '@/src/components/household/VisitHistoryModal';
 import HouseholdDetailDrawer from '@/src/components/visit/HouseholdDetailDrawer';
 
@@ -98,6 +100,7 @@ export default function ResidenceVisitPage() {
   const [dongs, setDongs] = useState<string[]>([]);
   const [hos, setHos] = useState<CommonDongho[]>([]);
   const [selectedDongho, setSelectedDongho] = useState<CommonDongho | null>(null);
+  const [householdDetail, setHouseholdDetail] = useState<HouseholdDetail | null>(null);
 
   // 모달 상태
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -142,6 +145,7 @@ export default function ResidenceVisitPage() {
   const handleDongChange = useCallback(async (dong: string) => {
     setForm(prev => ({ ...prev, dong, ho: '', donghoId: null }));
     setSelectedDongho(null);
+    setHouseholdDetail(null);
     if (!projectUuid || !dong) {
       setHos([]);
       return;
@@ -155,11 +159,24 @@ export default function ResidenceVisitPage() {
   }, [projectUuid]);
 
   // 호 선택 시 세대 정보 설정
-  const handleHoChange = useCallback((ho: string) => {
+  const handleHoChange = useCallback(async (ho: string) => {
     const dongho = hos.find(h => h.ho === ho);
     setForm(prev => ({ ...prev, ho, donghoId: dongho?.id || null }));
     setSelectedDongho(dongho || null);
-  }, [hos]);
+
+    // 세대정보 상세 조회
+    if (dongho?.id && projectUuid) {
+      try {
+        const detail = await getHouseholdDetail(projectUuid, dongho.id);
+        setHouseholdDetail(detail);
+      } catch (error) {
+        console.error('세대정보 조회 실패:', error);
+        setHouseholdDetail(null);
+      }
+    } else {
+      setHouseholdDetail(null);
+    }
+  }, [hos, projectUuid]);
 
   // 방문목적 체크박스 변경
   const handlePurposeChange = useCallback((purpose: string, checked: boolean) => {
@@ -194,6 +211,7 @@ export default function ResidenceVisitPage() {
       setSnackbar({ open: true, message: '입주방문이 등록되었습니다.', severity: 'success' });
       setForm(initialFormState);
       setSelectedDongho(null);
+      setHouseholdDetail(null);
       refetch();
     } catch (error) {
       console.error('등록 실패:', error);
@@ -447,15 +465,31 @@ export default function ResidenceVisitPage() {
             </Box>
 
             {/* 세대 정보 (동/호 선택 시 표시) */}
-            {selectedDongho && (
+            {householdDetail && (
               <>
                 <TextField
                   label="계약자"
                   size="small"
-                  value={selectedDongho.contractor_name || ''}
+                  value={householdDetail.contractor_name || ''}
                   disabled
                   sx={{ minWidth: 80 }}
                 />
+                <TextField
+                  label="입주자"
+                  size="small"
+                  value={householdDetail.resident_name || ''}
+                  disabled
+                  sx={{ minWidth: 80 }}
+                />
+                {householdDetail.agent_companys && householdDetail.agent_companys.length > 0 && (
+                  <TextField
+                    label="부동산"
+                    size="small"
+                    value={householdDetail.agent_companys.map(a => a.name).join(', ')}
+                    disabled
+                    sx={{ minWidth: 100 }}
+                  />
+                )}
                 <IconButton
                   size="small"
                   onClick={() => form.donghoId && selectedDongho && handleViewHistory(selectedDongho.dong, selectedDongho.ho, form.donghoId)}
