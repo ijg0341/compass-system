@@ -14,18 +14,13 @@ import {
   InputLabel,
   Checkbox,
   FormControlLabel,
-  FormGroup,
   Paper,
-  Tabs,
-  Tab,
   IconButton,
   Tooltip,
   Alert,
   Snackbar,
   CircularProgress,
-  Chip,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import HistoryIcon from '@mui/icons-material/History';
@@ -34,10 +29,8 @@ import DataTable, { type Column } from '@/src/components/common/DataTable';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useVisits, useCreateVisit, useDownloadVisitExcel, useUploadVisitExcel } from '@/src/hooks/useVisit';
 import { getCommonDongs, getCommonDonghos, type CommonDongho } from '@/src/lib/api/commonApi';
-import { getVisitHistory } from '@/src/lib/api/donghoApi';
 import { VISIT_TYPES, VISIT_PURPOSES, type Visit, type VisitListParams } from '@/src/lib/api/visitApi';
-import type { VisitHistory } from '@/src/types/dongho.types';
-import VisitHistoryModal from '@/src/components/visit/VisitHistoryModal';
+import VisitHistoryModal from '@/src/components/household/VisitHistoryModal';
 import HouseholdDetailDrawer from '@/src/components/visit/HouseholdDetailDrawer';
 
 // 입주방문 폼 상태
@@ -108,8 +101,7 @@ export default function ResidenceVisitPage() {
 
   // 모달 상태
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [historyData, setHistoryData] = useState<VisitHistory[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<{ dong: string; ho: string; donghoId: number } | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
@@ -210,20 +202,10 @@ export default function ResidenceVisitPage() {
   }, [projectUuid, form, createMutation, refetch]);
 
   // 방문이력 조회
-  const handleViewHistory = useCallback(async (donghoId: number) => {
-    if (!projectUuid) return;
-    setHistoryLoading(true);
-    try {
-      const data = await getVisitHistory(projectUuid, donghoId);
-      setHistoryData(data);
-      setHistoryModalOpen(true);
-    } catch (error) {
-      console.error('방문이력 조회 실패:', error);
-      setSnackbar({ open: true, message: '방문이력 조회에 실패했습니다.', severity: 'error' });
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [projectUuid]);
+  const handleViewHistory = useCallback((dong: string, ho: string, donghoId: number) => {
+    setHistoryTarget({ dong, ho, donghoId });
+    setHistoryModalOpen(true);
+  }, []);
 
   // 엑셀 다운로드
   const handleDownloadExcel = useCallback(async () => {
@@ -307,7 +289,7 @@ export default function ResidenceVisitPage() {
             size="small"
             onClick={(e) => {
               e.stopPropagation();
-              handleViewHistory(row.dongho_id);
+              handleViewHistory(row.dong, row.ho, row.dongho_id);
             }}
           >
             <HistoryIcon fontSize="small" />
@@ -321,13 +303,31 @@ export default function ResidenceVisitPage() {
   return (
     <Box>
       {/* 페이지 헤더 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={700}>
-          입주방문등록
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          입주관리 &gt; 입주방문등록
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h4" fontWeight={700}>
+            입주방문등록
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            입주관리 &gt; 입주방문등록
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<UploadIcon />}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          엑셀 등록
+        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".xlsx,.xls"
+          style={{ display: 'none' }}
+          onChange={handleUploadExcel}
+        />
       </Box>
 
       {/* 입주방문등록 폼 */}
@@ -335,310 +335,294 @@ export default function ResidenceVisitPage() {
         sx={{
           p: 2,
           mb: 3,
-          background: (theme) =>
-            theme.palette.mode === 'light'
-              ? 'rgba(255, 255, 255, 0.7)'
-              : 'rgba(26, 26, 26, 0.7)',
+          background: 'rgba(26, 26, 26, 0.7)',
           backdropFilter: 'blur(10px)',
-          border: (theme) =>
-            theme.palette.mode === 'light'
-              ? '1px solid rgba(0, 0, 0, 0.1)'
-              : '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" fontWeight={600}>
-            입주방문등록
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<UploadIcon />}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadMutation.isPending}
-          >
-            엑셀 등록
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".xlsx,.xls"
-            style={{ display: 'none' }}
-            onChange={handleUploadExcel}
-          />
-        </Box>
-
-        {/* 폼 필드 */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>동</InputLabel>
-            <Select
-              value={form.dong}
-              label="동"
-              onChange={(e) => handleDongChange(e.target.value)}
-            >
-              {dongs.map((dong) => (
-                <MenuItem key={dong} value={dong}>{dong}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>호</InputLabel>
-            <Select
-              value={form.ho}
-              label="호"
-              onChange={(e) => handleHoChange(e.target.value)}
-              disabled={!form.dong}
-            >
-              {hos.map((h) => (
-                <MenuItem key={h.id} value={h.ho}>{h.ho}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="방문자 이름"
-            size="small"
-            value={form.visitorName}
-            onChange={(e) => setForm(prev => ({ ...prev, visitorName: e.target.value }))}
-            sx={{ minWidth: 120 }}
-          />
-
-          <TextField
-            label="방문자 연락처"
-            size="small"
-            value={form.visitorPhone}
-            onChange={(e) => setForm(prev => ({ ...prev, visitorPhone: e.target.value }))}
-            sx={{ minWidth: 140 }}
-          />
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>방문구분</InputLabel>
-            <Select
-              value={form.visitType}
-              label="방문구분"
-              onChange={(e) => setForm(prev => ({ ...prev, visitType: e.target.value }))}
-            >
-              {VISIT_TYPES.map((type) => (
-                <MenuItem key={type} value={type}>{type}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="작업시작일"
-            type="date"
-            size="small"
-            value={form.workBegin}
-            onChange={(e) => setForm(prev => ({ ...prev, workBegin: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 150 }}
-          />
-
-          <TextField
-            label="작업종료일"
-            type="date"
-            size="small"
-            value={form.workEnd}
-            onChange={(e) => setForm(prev => ({ ...prev, workEnd: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 150 }}
-          />
-        </Box>
-
-        {/* 방문목적 체크박스 */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            방문목적
-          </Typography>
-          <FormGroup row>
-            {VISIT_PURPOSES.map((purpose) => (
-              <FormControlLabel
-                key={purpose}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={form.visitPurpose.includes(purpose)}
-                    onChange={(e) => handlePurposeChange(purpose, e.target.checked)}
-                  />
-                }
-                label={purpose}
-              />
-            ))}
-          </FormGroup>
-        </Box>
-
-        {/* 동/호 선택 시 세대 정보 표시 */}
-        {selectedDongho && (
-          <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-            <Tabs value={0} sx={{ minHeight: 36 }}>
-              <Tab label="계약자 정보" sx={{ minHeight: 36, py: 0 }} />
-              <Tab label="입주자 정보" sx={{ minHeight: 36, py: 0 }} />
-              <Tab label="부동산 정보" sx={{ minHeight: 36, py: 0 }} />
-              <Tab label="방문이력" sx={{ minHeight: 36, py: 0 }} />
-              <Tab label="메모" sx={{ minHeight: 36, py: 0 }} />
-            </Tabs>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flex: 1 }}>
-              <Chip label={selectedDongho.contractor_name || '계약자 없음'} size="small" />
-              <IconButton
-                size="small"
-                onClick={() => form.donghoId && handleViewHistory(form.donghoId)}
-                disabled={!form.donghoId || historyLoading}
-              >
-                <SearchIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-        )}
-
-        {/* 등록 버튼 */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={createMutation.isPending || !form.donghoId}
-          >
-            {createMutation.isPending ? <CircularProgress size={20} /> : '등록하기'}
-          </Button>
-        </Box>
-      </Paper>
-
-      {/* 방문 목록 섹션 */}
-      <Paper
-        sx={{
-          p: 2,
-          background: (theme) =>
-            theme.palette.mode === 'light'
-              ? 'rgba(255, 255, 255, 0.7)'
-              : 'rgba(26, 26, 26, 0.7)',
-          backdropFilter: 'blur(10px)',
-          border: (theme) =>
-            theme.palette.mode === 'light'
-              ? '1px solid rgba(0, 0, 0, 0.1)'
-              : '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" fontWeight={600}>
-            방문 목록
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownloadExcel}
-            disabled={downloadMutation.isPending}
-          >
-            엑셀 다운로드
-          </Button>
-        </Box>
-
-        {/* 필터 */}
-        <FilterContainer
-          onReset={handleResetFilters}
-          onApply={() => {
-            setPage(0);
-            refetch();
-          }}
-        >
-          <FilterRow>
-            <TextField
-              label="방문일"
-              type="date"
-              size="small"
-              value={filters.visitDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, visitDate: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 150 }}
-            />
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>동 선택</InputLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* 1행: 동, 호, 방문자정보, 방문구분, 작업기간 */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-end' }}>
+            <FormControl size="small" sx={{ minWidth: 80 }} required>
+              <InputLabel>동</InputLabel>
               <Select
-                value={filters.dong}
-                label="동 선택"
-                onChange={(e) => setFilters(prev => ({ ...prev, dong: e.target.value }))}
+                value={form.dong}
+                label="동"
+                onChange={(e) => handleDongChange(e.target.value)}
               >
-                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="">선택</MenuItem>
                 {dongs.map((dong) => (
                   <MenuItem key={dong} value={dong}>{dong}</MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>호 선택</InputLabel>
+
+            <FormControl size="small" sx={{ minWidth: 80 }} required disabled={!form.dong}>
+              <InputLabel>호</InputLabel>
               <Select
-                value={filters.ho}
-                label="호 선택"
-                onChange={(e) => setFilters(prev => ({ ...prev, ho: e.target.value }))}
+                value={form.ho}
+                label="호"
+                onChange={(e) => handleHoChange(e.target.value)}
               >
-                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="">선택</MenuItem>
+                {hos.map((h) => (
+                  <MenuItem key={h.id} value={h.ho}>{h.ho}</MenuItem>
+                ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>방문형태</InputLabel>
+
+            <TextField
+              label="방문자 이름"
+              size="small"
+              value={form.visitorName}
+              onChange={(e) => setForm(prev => ({ ...prev, visitorName: e.target.value }))}
+              sx={{ minWidth: 100 }}
+              required
+            />
+
+            <TextField
+              label="방문자 연락처"
+              size="small"
+              value={form.visitorPhone}
+              onChange={(e) => setForm(prev => ({ ...prev, visitorPhone: e.target.value }))}
+              placeholder="010-0000-0000"
+              sx={{ minWidth: 130 }}
+              required
+            />
+
+            <FormControl size="small" sx={{ minWidth: 100 }} required>
+              <InputLabel>방문구분</InputLabel>
               <Select
-                value={filters.visitType}
-                label="방문형태"
-                onChange={(e) => setFilters(prev => ({ ...prev, visitType: e.target.value }))}
+                value={form.visitType}
+                label="방문구분"
+                onChange={(e) => setForm(prev => ({ ...prev, visitType: e.target.value }))}
               >
-                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="">선택</MenuItem>
                 {VISIT_TYPES.map((type) => (
                   <MenuItem key={type} value={type}>{type}</MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>방문목적</InputLabel>
-              <Select
-                value={filters.visitPurpose}
-                label="방문목적"
-                onChange={(e) => setFilters(prev => ({ ...prev, visitPurpose: e.target.value }))}
-              >
-                <MenuItem value="">전체</MenuItem>
-                {VISIT_PURPOSES.map((purpose) => (
-                  <MenuItem key={purpose} value={purpose}>{purpose}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+
             <TextField
-              label="작업일"
+              label="작업시작일"
               type="date"
               size="small"
-              value={filters.workDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, workDate: e.target.value }))}
+              value={form.workBegin}
+              onChange={(e) => setForm(prev => ({ ...prev, workBegin: e.target.value }))}
               InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 150 }}
+              sx={{ minWidth: 140 }}
             />
-          </FilterRow>
-        </FilterContainer>
 
-        {/* 테이블 */}
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
+            <TextField
+              label="작업종료일"
+              type="date"
+              size="small"
+              value={form.workEnd}
+              onChange={(e) => setForm(prev => ({ ...prev, workEnd: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 140 }}
+            />
           </Box>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={visitsData?.list || []}
-            total={visitsData?.total || 0}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
-            onRowsPerPageChange={setRowsPerPage}
-            onRowClick={handleRowClick}
-            getRowKey={(row) => row.id}
-          />
-        )}
+
+          {/* 2행: 방문목적 체크박스, 세대정보, 메모, 버튼 */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+            {/* 방문목적 체크박스 (4x2 그리드) */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: 0 }}>
+              {VISIT_PURPOSES.map((purpose) => (
+                <FormControlLabel
+                  key={purpose}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={form.visitPurpose.includes(purpose)}
+                      onChange={(e) => handlePurposeChange(purpose, e.target.checked)}
+                    />
+                  }
+                  label={<Typography variant="body2">{purpose}</Typography>}
+                  sx={{ mr: 1 }}
+                />
+              ))}
+            </Box>
+
+            {/* 세대 정보 (동/호 선택 시 표시) */}
+            {selectedDongho && (
+              <>
+                <TextField
+                  label="계약자"
+                  size="small"
+                  value={selectedDongho.contractor_name || ''}
+                  disabled
+                  sx={{ minWidth: 80 }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={() => form.donghoId && selectedDongho && handleViewHistory(selectedDongho.dong, selectedDongho.ho, form.donghoId)}
+                  disabled={!form.donghoId}
+                  title="방문이력"
+                >
+                  <HistoryIcon fontSize="small" />
+                </IconButton>
+              </>
+            )}
+
+          </Box>
+
+          {/* 3행: 메모 + 등록버튼 */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <TextField
+              label="메모"
+              size="small"
+              value={form.memo}
+              onChange={(e) => setForm(prev => ({ ...prev, memo: e.target.value }))}
+              multiline
+              rows={2}
+              sx={{ flex: 1 }}
+              placeholder="메모를 입력하세요"
+            />
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || !form.donghoId}
+              sx={{
+                minWidth: 80,
+                height: 40,
+                bgcolor: '#333',
+                '&:hover': { bgcolor: '#444' },
+              }}
+            >
+              {createMutation.isPending ? <CircularProgress size={20} color="inherit" /> : '등록하기'}
+            </Button>
+          </Box>
+        </Box>
       </Paper>
 
-      {/* 방문이력 모달 */}
-      <VisitHistoryModal
-        open={historyModalOpen}
-        onClose={() => setHistoryModalOpen(false)}
-        data={historyData}
+      {/* 방문 목록 헤더 */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h5" fontWeight={600}>
+            방문 목록
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            총 {visitsData?.total ?? 0}건
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={handleDownloadExcel}
+          disabled={downloadMutation.isPending}
+        >
+          엑셀 다운로드
+        </Button>
+      </Box>
+
+      {/* 필터 */}
+      <FilterContainer
+        onReset={handleResetFilters}
+        onApply={() => {
+          setPage(0);
+          refetch();
+        }}
+      >
+        <FilterRow isLast>
+          <TextField
+            label="방문일"
+            type="date"
+            size="small"
+            value={filters.visitDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, visitDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>동 선택</InputLabel>
+            <Select
+              value={filters.dong}
+              label="동 선택"
+              onChange={(e) => setFilters(prev => ({ ...prev, dong: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+              {dongs.map((dong) => (
+                <MenuItem key={dong} value={dong}>{dong}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>호 선택</InputLabel>
+            <Select
+              value={filters.ho}
+              label="호 선택"
+              onChange={(e) => setFilters(prev => ({ ...prev, ho: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>방문형태</InputLabel>
+            <Select
+              value={filters.visitType}
+              label="방문형태"
+              onChange={(e) => setFilters(prev => ({ ...prev, visitType: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+              {VISIT_TYPES.map((type) => (
+                <MenuItem key={type} value={type}>{type}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>방문목적</InputLabel>
+            <Select
+              value={filters.visitPurpose}
+              label="방문목적"
+              onChange={(e) => setFilters(prev => ({ ...prev, visitPurpose: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+              {VISIT_PURPOSES.map((purpose) => (
+                <MenuItem key={purpose} value={purpose}>{purpose}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="작업일"
+            type="date"
+            size="small"
+            value={filters.workDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, workDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+        </FilterRow>
+      </FilterContainer>
+
+      {/* 테이블 */}
+      <DataTable
+        columns={columns}
+        data={visitsData?.list || []}
+        total={visitsData?.total || 0}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+        onRowClick={handleRowClick}
+        getRowKey={(row) => row.id}
+        emptyMessage={isLoading ? '데이터를 불러오는 중...' : '데이터가 없습니다.'}
       />
+
+      {/* 방문이력 모달 */}
+      {historyTarget && (
+        <VisitHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          dong={historyTarget.dong}
+          ho={historyTarget.ho}
+          donghoId={historyTarget.donghoId}
+        />
+      )}
 
       {/* 세대상세 Drawer */}
       {selectedVisit && (

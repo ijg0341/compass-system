@@ -97,6 +97,15 @@ export const MOVE_TIME_UNITS = [
 // Move API (조회)
 // =============================================================================
 
+/** API 응답 구조 */
+interface MoveApiResponse {
+  settings: MoveSettings | null;
+  list: MoveReservation[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
 /** 이사예약 목록 + 설정 정보 응답 (프론트용) */
 export interface MoveListResponse {
   settings: MoveSettings | null;
@@ -106,23 +115,28 @@ export interface MoveListResponse {
 
 /**
  * 이사예약 조회 (설정 정보 + 예약 목록)
- * 현재 API는 설정 정보만 반환하므로 변환 처리
  */
 export async function getMoveReservations(
   projectUuid: string,
   params?: MoveReservationListParams
 ): Promise<MoveListResponse> {
-  const response = await api.get<ApiResponse<MoveSettings | null>>(
+  // page를 offset으로 변환
+  const apiParams: Record<string, unknown> = { ...params };
+  if (params?.page !== undefined && params?.limit !== undefined) {
+    apiParams.offset = (params.page - 1) * params.limit;
+    delete apiParams.page;
+  }
+
+  const response = await api.get<ApiResponse<MoveApiResponse>>(
     getMoveBasePath(projectUuid),
-    { params }
+    { params: apiParams }
   );
 
-  // API가 설정 정보만 반환하므로 변환
-  const settings = response.data.data;
+  const data = response.data.data;
   return {
-    settings,
-    list: [], // 현재 API에서 예약 목록은 별도로 제공되지 않음
-    total: 0,
+    settings: data.settings,
+    list: data.list,
+    total: data.total,
   };
 }
 

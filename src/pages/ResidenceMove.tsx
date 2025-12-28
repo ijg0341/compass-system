@@ -12,10 +12,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Paper,
   Alert,
   Snackbar,
-  CircularProgress,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterContainer, { FilterRow } from '@/src/components/common/FilterContainer';
@@ -155,124 +153,99 @@ export default function ResidenceMovePage() {
   return (
     <Box>
       {/* 페이지 헤더 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={700}>
-          이사예약
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          입주관리 &gt; 이사예약
-        </Typography>
-      </Box>
-
-      {/* 이사예약 목록 */}
-      <Paper
-        sx={{
-          p: 2,
-          background: (theme) =>
-            theme.palette.mode === 'light'
-              ? 'rgba(255, 255, 255, 0.7)'
-              : 'rgba(26, 26, 26, 0.7)',
-          backdropFilter: 'blur(10px)',
-          border: (theme) =>
-            theme.palette.mode === 'light'
-              ? '1px solid rgba(0, 0, 0, 0.1)'
-              : '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" fontWeight={600}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h4" fontWeight={700}>
             이사예약
           </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownloadExcel}
-            disabled={downloadMutation.isPending}
-          >
-            엑셀 다운로드
-          </Button>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            총 {moveData?.total ?? 0}건
+          </Typography>
         </Box>
-
-        {/* 필터 */}
-        <FilterContainer
-          onReset={handleResetFilters}
-          onApply={() => {
-            setPage(0);
-            refetch();
-          }}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={handleDownloadExcel}
+          disabled={downloadMutation.isPending}
         >
-          <FilterRow isLast>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>동 선택</InputLabel>
-              <Select
-                value={filters.dong}
-                label="동 선택"
-                onChange={(e) => setFilters(prev => ({ ...prev, dong: e.target.value }))}
-              >
-                <MenuItem value="">전체</MenuItem>
-                {dongs.map((dong) => (
-                  <MenuItem key={dong} value={dong}>{dong}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>호 선택</InputLabel>
-              <Select
-                value={filters.ho}
-                label="호 선택"
-                onChange={(e) => setFilters(prev => ({ ...prev, ho: e.target.value }))}
-              >
-                <MenuItem value="">전체</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label="입주자 성명"
-              size="small"
-              value={filters.residentName}
-              onChange={(e) => setFilters(prev => ({ ...prev, residentName: e.target.value }))}
-              sx={{ minWidth: 120 }}
-            />
-            <TextField
-              label="입주일"
-              type="date"
-              size="small"
-              value={filters.residentDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, residentDate: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 150 }}
-            />
-            <TextField
-              label="예약일자"
-              type="date"
-              size="small"
-              value={filters.reservationDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, reservationDate: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 150 }}
-            />
-          </FilterRow>
-        </FilterContainer>
+          엑셀 다운로드
+        </Button>
+      </Box>
 
-        {/* 테이블 */}
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={moveData?.list || []}
-            total={moveData?.total || 0}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
-            onRowsPerPageChange={setRowsPerPage}
-            onRowClick={handleRowClick}
-            getRowKey={(row) => row.id}
+      {/* 필터 */}
+      <FilterContainer
+        onReset={handleResetFilters}
+        onApply={() => {
+          setPage(0);
+          refetch();
+        }}
+      >
+        <FilterRow isLast>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>동 선택</InputLabel>
+            <Select
+              value={filters.dong}
+              label="동 선택"
+              onChange={(e) => setFilters(prev => ({ ...prev, dong: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+              {dongs.map((dong) => (
+                <MenuItem key={dong} value={dong}>{dong}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>호 선택</InputLabel>
+            <Select
+              value={filters.ho}
+              label="호 선택"
+              onChange={(e) => setFilters(prev => ({ ...prev, ho: e.target.value }))}
+            >
+              <MenuItem value="">전체</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="입주자 성명"
+            size="small"
+            value={filters.residentName}
+            onChange={(e) => setFilters(prev => ({ ...prev, residentName: e.target.value }))}
+            sx={{ minWidth: 120 }}
           />
-        )}
-      </Paper>
+          <TextField
+            label="입주일"
+            type="date"
+            size="small"
+            value={filters.residentDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, residentDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+          <TextField
+            label="예약일자"
+            type="date"
+            size="small"
+            value={filters.reservationDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, reservationDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+        </FilterRow>
+      </FilterContainer>
+
+      {/* 테이블 */}
+      <DataTable
+        columns={columns}
+        data={moveData?.list || []}
+        total={moveData?.total || 0}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+        onRowClick={handleRowClick}
+        getRowKey={(row) => row.id}
+        emptyMessage={isLoading ? '데이터를 불러오는 중...' : '데이터가 없습니다.'}
+      />
 
       {/* 세대상세 Drawer */}
       {selectedReservation && (
