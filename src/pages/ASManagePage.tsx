@@ -259,7 +259,7 @@ export default function ASManagePage() {
         isLoading={isDetailLoading}
         statusOptions={optionsData?.as_status || []}
         priorityOptions={optionsData?.as_priority || []}
-        ascodeOptions={ascodeOptionsData || { tree: {}, ascodeMap: {} }}
+        ascodeOptions={ascodeOptionsData || { ascodes: [], issueTree: [], workTree: [] }}
         partners={partnersData?.list || []}
         onSave={handleDetailSave}
         isSaving={updateMutation.isPending}

@@ -129,49 +129,139 @@ export default function DetailDrawer({
   const [selectedWorkType1, setSelectedWorkType1] = useState('');
   const [selectedWorkType2, setSelectedWorkType2] = useState('');
 
-  // 6단계 캐스케이딩 옵션 계산 (tree 구조 기반)
-  const { tree, ascodeMap } = ascodeOptions;
+  // API 응답 구조에 맞게 캐스케이딩 옵션 계산
+  // issueTree: type → room → issue_category1 → issue_category2 → [id]
+  // workTree: work_type1 → work_type2 → [id]
+  // ascodes: id로 issue_type, work_type1, work_type2 조회
+  const { ascodes = [], issueTree = [] } = ascodeOptions || {};
 
-  // 1단계: 실명 옵션 (tree의 최상위 키들)
-  const roomOptions = useMemo(() => Object.keys(tree).sort(), [tree]);
+  // ascodes를 id로 빠르게 조회하기 위한 맵
+  const ascodeMap = useMemo(() => {
+    const map: Record<number, typeof ascodes[0]> = {};
+    ascodes.forEach((item) => { map[item.id] = item; });
+    return map;
+  }, [ascodes]);
 
-  // 2단계: 하자부위 옵션 (선택된 실명의 자식)
+  // issueTree에서 모든 room 노드 수집 (type 레벨 무시, room 레벨부터 시작)
+  const roomNodes = useMemo(() => {
+    const roomMap: Record<string, typeof issueTree[0]> = {};
+    issueTree.forEach((typeNode) => {
+      if (Array.isArray(typeNode.children)) {
+        typeNode.children.forEach((child) => {
+          if (typeof child === 'object' && child.column === 'room') {
+            // 같은 이름의 room이 있으면 children 병합
+            if (roomMap[child.name]) {
+              const existing = roomMap[child.name];
+              if (Array.isArray(child.children)) {
+                existing.children = [...existing.children, ...child.children];
+              }
+            } else {
+              roomMap[child.name] = { ...child, children: [...(child.children || [])] };
+            }
+          }
+        });
+      }
+    });
+    return roomMap;
+  }, [issueTree]);
+
+  // 1단계: 실명 옵션
+  const roomOptions = useMemo(() => Object.keys(roomNodes).sort(), [roomNodes]);
+
+  // 2단계: 하자부위 옵션
   const issueCategory1Options = useMemo(() => {
-    if (!selectedRoom || !tree[selectedRoom]) return [];
-    return Object.keys(tree[selectedRoom]).sort();
-  }, [tree, selectedRoom]);
+    if (!selectedRoom || !roomNodes[selectedRoom]) return [];
+    const cat1Set = new Set<string>();
+    roomNodes[selectedRoom].children.forEach((child) => {
+      if (typeof child === 'object' && child.column === 'issue_category1') {
+        cat1Set.add(child.name);
+      }
+    });
+    return Array.from(cat1Set).sort();
+  }, [roomNodes, selectedRoom]);
 
-  // 3단계: 하자상세 옵션 (선택된 하자부위의 자식)
+  // 선택된 issue_category1 노드들 가져오기
+  const cat1Nodes = useMemo(() => {
+    if (!selectedRoom || !selectedIssueCategory1 || !roomNodes[selectedRoom]) return [];
+    return roomNodes[selectedRoom].children.filter(
+      (child) => typeof child === 'object' && child.column === 'issue_category1' && child.name === selectedIssueCategory1
+    ) as typeof issueTree;
+  }, [roomNodes, selectedRoom, selectedIssueCategory1]);
+
+  // 3단계: 하자상세 옵션
   const issueCategory2Options = useMemo(() => {
-    if (!selectedRoom || !selectedIssueCategory1) return [];
-    const level2 = tree[selectedRoom]?.[selectedIssueCategory1];
-    if (!level2) return [];
-    return Object.keys(level2).sort();
-  }, [tree, selectedRoom, selectedIssueCategory1]);
+    const cat2Set = new Set<string>();
+    cat1Nodes.forEach((node) => {
+      if (Array.isArray(node.children)) {
+        node.children.forEach((child) => {
+          if (typeof child === 'object' && child.column === 'issue_category2') {
+            cat2Set.add(child.name);
+          }
+        });
+      }
+    });
+    return Array.from(cat2Set).sort();
+  }, [cat1Nodes]);
 
-  // 4단계: 하자유형 옵션 (선택된 하자상세의 자식)
+  // 선택된 issue_category2의 ascode id들 가져오기
+  const selectedAscodeIds = useMemo(() => {
+    if (!selectedIssueCategory2) return [];
+    const ids: number[] = [];
+    cat1Nodes.forEach((node) => {
+      if (Array.isArray(node.children)) {
+        node.children.forEach((child) => {
+          if (typeof child === 'object' && child.column === 'issue_category2' && child.name === selectedIssueCategory2) {
+            child.children.forEach((id) => {
+              if (typeof id === 'number') ids.push(id);
+            });
+          }
+        });
+      }
+    });
+    return ids;
+  }, [cat1Nodes, selectedIssueCategory2]);
+
+  // 4단계: 하자유형 옵션 (ascodes에서 조회)
   const issueTypeOptions = useMemo(() => {
-    if (!selectedRoom || !selectedIssueCategory1 || !selectedIssueCategory2) return [];
-    const level3 = tree[selectedRoom]?.[selectedIssueCategory1]?.[selectedIssueCategory2];
-    if (!level3) return [];
-    return Object.keys(level3).sort();
-  }, [tree, selectedRoom, selectedIssueCategory1, selectedIssueCategory2]);
+    const typeSet = new Set<string>();
+    selectedAscodeIds.forEach((id) => {
+      const ascode = ascodeMap[id];
+      if (ascode?.issue_type) typeSet.add(ascode.issue_type);
+    });
+    return Array.from(typeSet).sort();
+  }, [selectedAscodeIds, ascodeMap]);
 
-  // 5단계: 대공종 옵션 (선택된 하자유형의 자식)
+  // 선택된 issue_type에 해당하는 ascode id들
+  const filteredByIssueType = useMemo(() => {
+    if (!selectedIssueType) return [];
+    return selectedAscodeIds.filter((id) => ascodeMap[id]?.issue_type === selectedIssueType);
+  }, [selectedAscodeIds, selectedIssueType, ascodeMap]);
+
+  // 5단계: 대공종 옵션
   const workType1Options = useMemo(() => {
-    if (!selectedRoom || !selectedIssueCategory1 || !selectedIssueCategory2 || !selectedIssueType) return [];
-    const level4 = tree[selectedRoom]?.[selectedIssueCategory1]?.[selectedIssueCategory2]?.[selectedIssueType];
-    if (!level4) return [];
-    return Object.keys(level4).sort();
-  }, [tree, selectedRoom, selectedIssueCategory1, selectedIssueCategory2, selectedIssueType]);
+    const typeSet = new Set<string>();
+    filteredByIssueType.forEach((id) => {
+      const ascode = ascodeMap[id];
+      if (ascode?.work_type1) typeSet.add(ascode.work_type1);
+    });
+    return Array.from(typeSet).sort();
+  }, [filteredByIssueType, ascodeMap]);
 
-  // 6단계: 소공종 옵션 (선택된 대공종의 자식 - 배열)
+  // 선택된 work_type1에 해당하는 ascode id들
+  const filteredByWorkType1 = useMemo(() => {
+    if (!selectedWorkType1) return [];
+    return filteredByIssueType.filter((id) => ascodeMap[id]?.work_type1 === selectedWorkType1);
+  }, [filteredByIssueType, selectedWorkType1, ascodeMap]);
+
+  // 6단계: 소공종 옵션
   const workType2Options = useMemo(() => {
-    if (!selectedRoom || !selectedIssueCategory1 || !selectedIssueCategory2 || !selectedIssueType || !selectedWorkType1) return [];
-    const level5 = tree[selectedRoom]?.[selectedIssueCategory1]?.[selectedIssueCategory2]?.[selectedIssueType]?.[selectedWorkType1];
-    if (!level5 || !Array.isArray(level5)) return [];
-    return [...level5].sort();
-  }, [tree, selectedRoom, selectedIssueCategory1, selectedIssueCategory2, selectedIssueType, selectedWorkType1]);
+    const typeSet = new Set<string>();
+    filteredByWorkType1.forEach((id) => {
+      const ascode = ascodeMap[id];
+      if (ascode?.work_type2) typeSet.add(ascode.work_type2);
+    });
+    return Array.from(typeSet).sort();
+  }, [filteredByWorkType1, ascodeMap]);
 
   useEffect(() => {
     if (detail) {
@@ -210,17 +300,19 @@ export default function DetailDrawer({
     }
   }, [donghoData]);
 
-  // 선택된 필드들로 매칭되는 ascode ID 찾기 (ascodeMap 사용)
+  // 선택된 필드들로 매칭되는 ascode ID 찾기
   useEffect(() => {
     if (selectedRoom && selectedIssueCategory1 && selectedIssueCategory2 &&
         selectedIssueType && selectedWorkType1 && selectedWorkType2) {
-      const key = `${selectedRoom}|${selectedIssueCategory1}|${selectedIssueCategory2}|${selectedIssueType}|${selectedWorkType1}|${selectedWorkType2}`;
-      const matchedId = ascodeMap[key];
+      // filteredByWorkType1에서 work_type2까지 일치하는 ID 찾기
+      const matchedId = filteredByWorkType1.find(
+        (id) => ascodeMap[id]?.work_type2 === selectedWorkType2
+      );
       if (matchedId) {
         setFormData((prev) => ({ ...prev, project_ascode_id: matchedId }));
       }
     }
-  }, [selectedRoom, selectedIssueCategory1, selectedIssueCategory2, selectedIssueType, selectedWorkType1, selectedWorkType2, ascodeMap]);
+  }, [selectedRoom, selectedIssueCategory1, selectedIssueCategory2, selectedIssueType, selectedWorkType1, selectedWorkType2, filteredByWorkType1, ascodeMap]);
 
   const handleSave = () => {
     onSave(formData);

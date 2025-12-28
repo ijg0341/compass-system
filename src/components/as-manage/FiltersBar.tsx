@@ -59,31 +59,62 @@ export default function FiltersBar({
     ...filters,
   });
 
-  // 하자코드에서 고유값 추출
+  // ========== 실명 → 부위명 → 상세부위명 → 유형 캐스케이딩 ==========
+  // 1단계: 실명 옵션 (전체)
   const rooms = useMemo(
     () => [...new Set(ascodes.map((a) => a.room).filter(Boolean))].sort(),
     [ascodes]
   );
-  const issueCategories1 = useMemo(
-    () => [...new Set(ascodes.map((a) => a.issue_category1).filter(Boolean))].sort(),
-    [ascodes]
-  );
-  const issueCategories2 = useMemo(
-    () => [...new Set(ascodes.map((a) => a.issue_category2).filter(Boolean))].sort(),
-    [ascodes]
-  );
-  const issueTypes = useMemo(
-    () => [...new Set(ascodes.map((a) => a.issue_type).filter(Boolean))].sort(),
-    [ascodes]
-  );
+
+  // 2단계: 부위명 옵션 (실명 선택 시 필터링)
+  const issueCategories1 = useMemo(() => {
+    const filtered = localFilters.room
+      ? ascodes.filter((a) => a.room === localFilters.room)
+      : ascodes;
+    return [...new Set(filtered.map((a) => a.issue_category1).filter(Boolean))].sort();
+  }, [ascodes, localFilters.room]);
+
+  // 3단계: 상세부위명 옵션 (부위명 선택 시 필터링)
+  const issueCategories2 = useMemo(() => {
+    let filtered = ascodes;
+    if (localFilters.room) filtered = filtered.filter((a) => a.room === localFilters.room);
+    if (localFilters.issue_category1) filtered = filtered.filter((a) => a.issue_category1 === localFilters.issue_category1);
+    return [...new Set(filtered.map((a) => a.issue_category2).filter(Boolean))].sort();
+  }, [ascodes, localFilters.room, localFilters.issue_category1]);
+
+  // 4단계: 유형 옵션 (상세부위명 선택 시 필터링)
+  const issueTypes = useMemo(() => {
+    let filtered = ascodes;
+    if (localFilters.room) filtered = filtered.filter((a) => a.room === localFilters.room);
+    if (localFilters.issue_category1) filtered = filtered.filter((a) => a.issue_category1 === localFilters.issue_category1);
+    if (localFilters.issue_category2) filtered = filtered.filter((a) => a.issue_category2 === localFilters.issue_category2);
+    return [...new Set(filtered.map((a) => a.issue_type).filter(Boolean))].sort();
+  }, [ascodes, localFilters.room, localFilters.issue_category1, localFilters.issue_category2]);
+
+  // ========== 대공종 → 소공종 → 협력사 캐스케이딩 ==========
+  // 1단계: 대공종 옵션 (전체)
   const workTypes1 = useMemo(
     () => [...new Set(ascodes.map((a) => a.work_type1).filter(Boolean))].sort(),
     [ascodes]
   );
-  const workTypes2 = useMemo(
-    () => [...new Set(ascodes.map((a) => a.work_type2).filter(Boolean))].sort(),
-    [ascodes]
-  );
+
+  // 2단계: 소공종 옵션 (대공종 선택 시 필터링)
+  const workTypes2 = useMemo(() => {
+    const filtered = localFilters.work_type1
+      ? ascodes.filter((a) => a.work_type1 === localFilters.work_type1)
+      : ascodes;
+    return [...new Set(filtered.map((a) => a.work_type2).filter(Boolean))].sort();
+  }, [ascodes, localFilters.work_type1]);
+
+  // 3단계: 협력사 옵션 (소공종 선택 시 해당 협력사만 필터링)
+  const filteredPartners = useMemo(() => {
+    if (!localFilters.work_type1 && !localFilters.work_type2) return partners;
+    let filtered = ascodes;
+    if (localFilters.work_type1) filtered = filtered.filter((a) => a.work_type1 === localFilters.work_type1);
+    if (localFilters.work_type2) filtered = filtered.filter((a) => a.work_type2 === localFilters.work_type2);
+    const partnerIds = new Set(filtered.map((a) => a.project_users_id).filter(Boolean));
+    return partners.filter((p) => partnerIds.has(p.id));
+  }, [ascodes, partners, localFilters.work_type1, localFilters.work_type2]);
 
   // 선택된 동에 해당하는 호수 목록
   const hoOptions = useMemo(
@@ -118,6 +149,52 @@ export default function FiltersBar({
     (field: keyof AfterserviceListParams) => (event: SelectChangeEvent<string>) => {
       setLocalFilters({ ...localFilters, [field]: event.target.value || undefined });
     };
+
+  // 실명 → 부위명 → 상세부위명 → 유형 캐스케이딩 핸들러
+  const handleRoomChange = (event: SelectChangeEvent<string>) => {
+    setLocalFilters({
+      ...localFilters,
+      room: event.target.value || undefined,
+      issue_category1: undefined,
+      issue_category2: undefined,
+      issue_type: undefined,
+    });
+  };
+
+  const handleIssueCategory1Change = (event: SelectChangeEvent<string>) => {
+    setLocalFilters({
+      ...localFilters,
+      issue_category1: event.target.value || undefined,
+      issue_category2: undefined,
+      issue_type: undefined,
+    });
+  };
+
+  const handleIssueCategory2Change = (event: SelectChangeEvent<string>) => {
+    setLocalFilters({
+      ...localFilters,
+      issue_category2: event.target.value || undefined,
+      issue_type: undefined,
+    });
+  };
+
+  // 대공종 → 소공종 → 협력사 캐스케이딩 핸들러
+  const handleWorkType1Change = (event: SelectChangeEvent<string>) => {
+    setLocalFilters({
+      ...localFilters,
+      work_type1: event.target.value || undefined,
+      work_type2: undefined,
+      partner_id: undefined,
+    });
+  };
+
+  const handleWorkType2Change = (event: SelectChangeEvent<string>) => {
+    setLocalFilters({
+      ...localFilters,
+      work_type2: event.target.value || undefined,
+      partner_id: undefined,
+    });
+  };
 
   const handleDateTypeChange = (event: SelectChangeEvent<string>) => {
     setLocalFilters({
@@ -250,7 +327,7 @@ export default function FiltersBar({
           <Select
             value={localFilters.work_type1 || ''}
             label="대공종"
-            onChange={handleSelectChange('work_type1')}
+            onChange={handleWorkType1Change}
           >
             <MenuItem value="">전체</MenuItem>
             {workTypes1.map((wt) => (
@@ -266,7 +343,8 @@ export default function FiltersBar({
           <Select
             value={localFilters.work_type2 || ''}
             label="소공종"
-            onChange={handleSelectChange('work_type2')}
+            onChange={handleWorkType2Change}
+            disabled={!localFilters.work_type1}
           >
             <MenuItem value="">전체</MenuItem>
             {workTypes2.map((wt) => (
@@ -290,7 +368,7 @@ export default function FiltersBar({
             }
           >
             <MenuItem value="">전체</MenuItem>
-            {partners.map((p) => (
+            {filteredPartners.map((p) => (
               <MenuItem key={p.id} value={p.id.toString()}>
                 {p.company || p.name}
               </MenuItem>
@@ -313,7 +391,7 @@ export default function FiltersBar({
           <Select
             value={localFilters.room || ''}
             label="실명"
-            onChange={handleSelectChange('room')}
+            onChange={handleRoomChange}
           >
             <MenuItem value="">전체</MenuItem>
             {rooms.map((r) => (
@@ -329,7 +407,8 @@ export default function FiltersBar({
           <Select
             value={localFilters.issue_category1 || ''}
             label="부위명"
-            onChange={handleSelectChange('issue_category1')}
+            onChange={handleIssueCategory1Change}
+            disabled={!localFilters.room}
           >
             <MenuItem value="">전체</MenuItem>
             {issueCategories1.map((ic) => (
@@ -345,7 +424,8 @@ export default function FiltersBar({
           <Select
             value={localFilters.issue_category2 || ''}
             label="상세부위명"
-            onChange={handleSelectChange('issue_category2')}
+            onChange={handleIssueCategory2Change}
+            disabled={!localFilters.issue_category1}
           >
             <MenuItem value="">전체</MenuItem>
             {issueCategories2.map((ic) => (
@@ -362,6 +442,7 @@ export default function FiltersBar({
             value={localFilters.issue_type || ''}
             label="유형"
             onChange={handleSelectChange('issue_type')}
+            disabled={!localFilters.issue_category2}
           >
             <MenuItem value="">전체</MenuItem>
             {issueTypes.map((it) => (

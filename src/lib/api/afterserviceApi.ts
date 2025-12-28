@@ -102,24 +102,36 @@ export interface AscodeRequest {
 }
 
 /**
- * 하자코드 옵션 응답 타입 (6단계 다단구조)
- * 구조: 실명 → 하자부위 → 하자상세 → 하자유형 → 대공종 → [소공종]
+ * 하자코드 트리 노드 타입
  */
-export type AscodeTree = Record<string, // 실명
-  Record<string, // 하자부위
-    Record<string, // 하자상세
-      Record<string, // 하자유형
-        Record<string, // 대공종
-          string[] // 소공종[]
-        >
-      >
-    >
-  >
->;
+export interface AscodeTreeNode {
+  name: string;
+  column: string;
+  children: (AscodeTreeNode | number)[];
+}
 
+/**
+ * 하자코드 항목 타입
+ */
+export interface AscodeItem {
+  id: number;
+  issue_type: string;
+  work_type1: string;
+  work_type2: string;
+  project_users_id: number | null;
+  project_users_company: string | null;
+}
+
+/**
+ * 하자코드 옵션 응답 타입
+ * - ascodes: 하자코드 목록 (id로 issue_type, work_type1, work_type2 조회)
+ * - issueTree: 하자분류 트리 (type → room → issue_category1 → issue_category2 → [id])
+ * - workTree: 공종분류 트리 (work_type1 → work_type2 → [id])
+ */
 export interface AscodeOptions {
-  tree: AscodeTree;
-  ascodeMap: Record<string, number>; // "room|cat1|cat2|type|work1|work2" -> id
+  ascodes: AscodeItem[];
+  issueTree: AscodeTreeNode[];
+  workTree: AscodeTreeNode[];
 }
 
 /**
