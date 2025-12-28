@@ -17,14 +17,11 @@ import {
   TablePagination,
   Select,
   MenuItem,
-  IconButton,
+  Button,
   Chip,
-  Dialog,
-  DialogContent,
   type SelectChangeEvent,
 } from '@mui/material';
-import ImageIcon from '@mui/icons-material/Image';
-import CloseIcon from '@mui/icons-material/Close';
+import ImagePreviewModal from '@/src/components/common/ImagePreviewModal';
 import type {
   AfterserviceListItem,
   AsStatus,
@@ -61,10 +58,7 @@ export default function ManageTable({
   priorityOptions,
   isUpdating,
 }: ManageTableProps) {
-  const [imageDialog, setImageDialog] = useState<{ open: boolean; url: string }>({
-    open: false,
-    url: '',
-  });
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     onPageChange(newPage);
@@ -85,9 +79,9 @@ export default function ManageTable({
     onPriorityChange(id, Number(event.target.value));
   };
 
-  const handleImageClick = (url: string) => (event: React.MouseEvent) => {
+  const handleImageClick = (url: string, name: string) => (event: React.MouseEvent) => {
     event.stopPropagation();
-    setImageDialog({ open: true, url });
+    setPreviewImage({ url, name });
   };
 
   const getStatusColor = (statusId: number) => AS_STATUS_COLORS[statusId] || '#757575';
@@ -120,10 +114,10 @@ export default function ManageTable({
                 <TableCell sx={{ fontWeight: 600, minWidth: 80 }}>부위</TableCell>
                 <TableCell sx={{ fontWeight: 600, minWidth: 80 }}>상세부위</TableCell>
                 <TableCell sx={{ fontWeight: 600, minWidth: 70 }}>유형</TableCell>
-                <TableCell sx={{ fontWeight: 600, minWidth: 60 }} align="center">
+                <TableCell sx={{ fontWeight: 600, minWidth: 100 }} align="center">
                   원거리
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, minWidth: 60 }} align="center">
+                <TableCell sx={{ fontWeight: 600, minWidth: 100 }} align="center">
                   근거리
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>형태</TableCell>
@@ -167,30 +161,50 @@ export default function ManageTable({
                   <TableCell>{row.issue_category2 || '-'}</TableCell>
                   <TableCell>{row.issue_type || '-'}</TableCell>
                   <TableCell align="center">
-                    {row.image_far ? (
-                      <IconButton
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      <Button
                         size="small"
-                        onClick={handleImageClick(row.image_far)}
-                        color="primary"
+                        variant="outlined"
+                        onClick={handleImageClick(row.image_far || '', '원거리 하자 사진')}
+                        disabled={!row.image_far}
+                        sx={{ minWidth: 40, px: 0.5, py: 0, fontSize: '0.75rem' }}
                       >
-                        <ImageIcon fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      '-'
-                    )}
+                        하자
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="success"
+                        onClick={handleImageClick(row.completed_image_far || '', '원거리 완료 사진')}
+                        disabled={!row.completed_image_far}
+                        sx={{ minWidth: 40, px: 0.5, py: 0, fontSize: '0.75rem' }}
+                      >
+                        완료
+                      </Button>
+                    </Box>
                   </TableCell>
                   <TableCell align="center">
-                    {row.image_near ? (
-                      <IconButton
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      <Button
                         size="small"
-                        onClick={handleImageClick(row.image_near)}
-                        color="primary"
+                        variant="outlined"
+                        onClick={handleImageClick(row.image_near || '', '근거리 하자 사진')}
+                        disabled={!row.image_near}
+                        sx={{ minWidth: 40, px: 0.5, py: 0, fontSize: '0.75rem' }}
                       >
-                        <ImageIcon fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      '-'
-                    )}
+                        하자
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="success"
+                        onClick={handleImageClick(row.completed_image_near || '', '근거리 완료 사진')}
+                        disabled={!row.completed_image_near}
+                        sx={{ minWidth: 40, px: 0.5, py: 0, fontSize: '0.75rem' }}
+                      >
+                        완료
+                      </Button>
+                    </Box>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Select
@@ -283,36 +297,13 @@ export default function ManageTable({
         />
       </Paper>
 
-      {/* 이미지 미리보기 다이얼로그 */}
-      <Dialog
-        open={imageDialog.open}
-        onClose={() => setImageDialog({ open: false, url: '' })}
-        maxWidth="md"
-      >
-        <Box sx={{ position: 'relative' }}>
-          <IconButton
-            onClick={() => setImageDialog({ open: false, url: '' })}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              color: 'white',
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-          <DialogContent sx={{ p: 0 }}>
-            <Box
-              component="img"
-              src={imageDialog.url}
-              alt="하자 사진"
-              sx={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }}
-            />
-          </DialogContent>
-        </Box>
-      </Dialog>
+      {/* 이미지 미리보기 모달 */}
+      <ImagePreviewModal
+        open={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        imageUrl={previewImage?.url ?? ''}
+        imageName={previewImage?.name}
+      />
     </>
   );
 }
