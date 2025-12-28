@@ -6,13 +6,14 @@
  * Base URL: /adm/project/{projectUuid}/common
  */
 import { api } from './client';
-import type { ApiResponse, ApiSimpleListData } from '@/src/types/api';
+import type { ApiResponse, ApiSimpleListData, ApiListData } from '@/src/types/api';
 
 // =============================================================================
 // API 경로 헬퍼
 // =============================================================================
 
 const getCommonBasePath = (projectUuid: string) => `/adm/project/${projectUuid}/common`;
+const getAdminBasePath = (projectUuid: string) => `/adm/project/${projectUuid}`;
 
 // =============================================================================
 // 타입 정의
@@ -31,6 +32,14 @@ export interface CommonDongho {
   unit_type: string | null;
   contractor_name?: string;
   contractor_phone?: string;
+}
+
+/** 프로젝트 타입 (평형) */
+export interface ProjectType {
+  id: number;
+  name: string;
+  floorplan_file_id?: number;
+  give_items?: Array<{ name: string; quantity: number }>;
 }
 
 // =============================================================================
@@ -61,4 +70,19 @@ export async function getCommonDonghos(
     { params: dong ? { dong } : undefined }
   );
   return response.data.data.list;
+}
+
+// =============================================================================
+// Project Type API (타입/평형)
+// =============================================================================
+
+/**
+ * 프로젝트 타입 목록 조회 (id, name만)
+ * GET /adm/project/{projectUuid}/common/types
+ */
+export async function getProjectTypes(projectUuid: string): Promise<ProjectType[]> {
+  const response = await api.get<ApiResponse<ProjectType[]>>(
+    `${getCommonBasePath(projectUuid)}/types`
+  );
+  return response.data.data;
 }

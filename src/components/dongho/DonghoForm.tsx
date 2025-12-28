@@ -5,9 +5,15 @@ import {
   Button,
   Paper,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Close as CloseIcon } from '@mui/icons-material';
 import type { Dongho, DonghoRequest } from '@/src/types/dongho.types';
+import { useProjectTypes } from '@/src/hooks/useDongho';
+import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 
 interface DonghoFormProps {
   editingDongho: Dongho | null;
@@ -36,6 +42,8 @@ export default function DonghoForm({
   onCancel,
   isSubmitting = false,
 }: DonghoFormProps) {
+  const { projectUuid } = useCurrentProject();
+  const { data: projectTypes = [] } = useProjectTypes(projectUuid);
   const [formData, setFormData] = useState<FormState>(INITIAL_FORM);
 
   // 수정 모드 시 폼 데이터 설정
@@ -126,14 +134,23 @@ export default function DonghoForm({
           inputProps={{ maxLength: 20 }}
         />
 
-        <TextField
-          label="타입/평수"
-          size="small"
-          value={formData.unit_type}
-          onChange={handleInputChange('unit_type')}
-          placeholder="예: 59A"
-          sx={{ width: 100 }}
-        />
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>타입/평수</InputLabel>
+          <Select
+            value={formData.unit_type}
+            label="타입/평수"
+            onChange={(e) => setFormData((prev) => ({ ...prev, unit_type: e.target.value }))}
+          >
+            <MenuItem value="">
+              <em>선택 안함</em>
+            </MenuItem>
+            {projectTypes.map((type) => (
+              <MenuItem key={type.id} value={type.name}>
+                {type.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <TextField
           label="승강기 라인"

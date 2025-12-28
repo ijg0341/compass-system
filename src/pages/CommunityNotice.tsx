@@ -33,25 +33,33 @@ export default function CommunityNoticePage() {
   const [searchParams] = useSearchParams();
   const { projectUuid } = useCurrentProject();
 
-  // 필터 상태
+  // 필터 상태 (입력용)
   const [searchType, setSearchType] = useState<string>('subject');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [dateBegin, setDateBegin] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
+  // 적용된 필터 상태 (검색 버튼 클릭 시에만 업데이트)
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchType: 'subject',
+    searchKeyword: '',
+    dateBegin: '',
+    dateEnd: '',
+  });
+
   // 페이지네이션
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
 
-  // API 파라미터
+  // API 파라미터 (적용된 필터만 사용)
   const params: BoardListParams = useMemo(() => ({
     page: page + 1,
     size: rowsPerPage,
-    searchType: searchKeyword ? searchType as BoardListParams['searchType'] : undefined,
-    searchKeyword: searchKeyword || undefined,
-    date_begin: dateBegin || undefined,
-    date_end: dateEnd || undefined,
-  }), [page, rowsPerPage, searchType, searchKeyword, dateBegin, dateEnd]);
+    searchType: appliedFilters.searchKeyword ? appliedFilters.searchType as BoardListParams['searchType'] : undefined,
+    searchKeyword: appliedFilters.searchKeyword || undefined,
+    date_begin: appliedFilters.dateBegin || undefined,
+    date_end: appliedFilters.dateEnd || undefined,
+  }), [page, rowsPerPage, appliedFilters]);
 
   // API 훅
   const { data: postsData, isLoading, error, refetch } = useNotices(projectUuid, params);
@@ -65,14 +73,25 @@ export default function CommunityNoticePage() {
     setSearchKeyword('');
     setDateBegin('');
     setDateEnd('');
+    setAppliedFilters({
+      searchType: 'subject',
+      searchKeyword: '',
+      dateBegin: '',
+      dateEnd: '',
+    });
     setPage(0);
   }, []);
 
-  // 검색
+  // 검색 (버튼 클릭 시 필터 적용)
   const handleSearch = useCallback(() => {
+    setAppliedFilters({
+      searchType,
+      searchKeyword,
+      dateBegin,
+      dateEnd,
+    });
     setPage(0);
-    refetch();
-  }, [refetch]);
+  }, [searchType, searchKeyword, dateBegin, dateEnd]);
 
   // 상세 페이지로 이동
   const handleRowClick = useCallback((row: BoardPostListItem) => {

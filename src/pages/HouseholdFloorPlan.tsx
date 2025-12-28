@@ -15,7 +15,7 @@ import {
   TableRow,
   CircularProgress,
 } from '@mui/material';
-import HouseholdDetailModal from '@/src/components/household/HouseholdDetailModal';
+import HouseholdDetailDrawer from '@/src/components/household/HouseholdDetailDrawer';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useFloorPlan } from '@/src/hooks/useDongho';
 import type { FloorPlanHo, DateField } from '@/src/types/dongho.types';
@@ -171,7 +171,7 @@ export default function HouseholdFloorPlan() {
   const { projectUuid, hasProject } = useCurrentProject();
   const { data, isLoading } = useFloorPlan(projectUuid);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<number | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // 동 목록 정렬
   const sortedDongs = useMemo(() => {
@@ -181,11 +181,11 @@ export default function HouseholdFloorPlan() {
 
   const handleHoClick = (id: number) => {
     setSelectedHouseholdId(id);
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
-  const handleModalClose = () => {
-    setModalOpen(false);
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
     setSelectedHouseholdId(null);
   };
 
@@ -255,10 +255,10 @@ export default function HouseholdFloorPlan() {
         )}
       </Box>
 
-      {/* 세대정보 상세 모달 */}
-      <HouseholdDetailModal
-        open={modalOpen}
-        onClose={handleModalClose}
+      {/* 세대정보 상세 Drawer */}
+      <HouseholdDetailDrawer
+        open={drawerOpen}
+        onClose={handleDrawerClose}
         householdId={selectedHouseholdId}
       />
     </Box>

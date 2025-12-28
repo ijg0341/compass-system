@@ -225,30 +225,33 @@ export async function getFloorPlan(projectUuid: string): Promise<FloorPlanData> 
 
 // =============================================================================
 // 세대정보 상세 API (CP-SA-99-001)
+// Base URL: /adm/project/{projectUuid}/donghos/household
 // =============================================================================
 
 /**
  * 세대정보 상세 조회
+ * 검침/지급/키불출/부동산 정보 포함
  */
 export async function getHouseholdDetail(
   projectUuid: string,
   id: number
 ): Promise<HouseholdDetail> {
   const response = await api.get<ApiResponse<HouseholdDetail>>(
-    `${getAdminBasePath(projectUuid)}/donghos/${id}`
+    `${getAdminBasePath(projectUuid)}/donghos/household/${id}`
   );
   return response.data.data;
 }
 
 /**
  * 세대정보 수정
+ * 입주자정보, 검침, 지급품, 키불출, 부동산 정보 수정 가능
  */
 export async function updateHousehold(
   projectUuid: string,
   id: number,
   data: HouseholdUpdateRequest
 ): Promise<void> {
-  await api.put(`${getAdminBasePath(projectUuid)}/donghos/${id}`, data);
+  await api.put(`${getAdminBasePath(projectUuid)}/donghos/household/${id}`, data);
 }
 
 // =============================================================================

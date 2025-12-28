@@ -20,7 +20,7 @@ import {
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterContainer, { FilterRow } from '@/src/components/common/FilterContainer';
 import DataTable, { type Column } from '@/src/components/common/DataTable';
-import HouseholdDetailModal from '@/src/components/household/HouseholdDetailModal';
+import HouseholdDetailDrawer from '@/src/components/household/HouseholdDetailDrawer';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useHouseholdStatus, useDonghos } from '@/src/hooks/useDongho';
 import { downloadHouseholdStatusExcel } from '@/src/lib/api/donghoApi';
@@ -61,7 +61,7 @@ export default function HouseholdList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<number | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // API 파라미터 변환
   const apiParams: HouseholdStatusParams = useMemo(() => {
@@ -161,11 +161,11 @@ export default function HouseholdList() {
 
   const handleRowClick = (row: HouseholdStatus) => {
     setSelectedHouseholdId(row.id);
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
-  const handleModalClose = () => {
-    setModalOpen(false);
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
     setSelectedHouseholdId(null);
   };
 
@@ -298,10 +298,10 @@ export default function HouseholdList() {
         emptyMessage={isLoading ? '데이터를 불러오는 중...' : '데이터가 없습니다.'}
       />
 
-      {/* 세대정보 상세 모달 */}
-      <HouseholdDetailModal
-        open={modalOpen}
-        onClose={handleModalClose}
+      {/* 세대정보 상세 Drawer */}
+      <HouseholdDetailDrawer
+        open={drawerOpen}
+        onClose={handleDrawerClose}
         householdId={selectedHouseholdId}
       />
     </Box>

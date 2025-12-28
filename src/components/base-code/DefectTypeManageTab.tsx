@@ -19,7 +19,7 @@ import {
   useUpdateAscode,
   usePartners,
 } from '@/src/hooks/useAfterservice';
-import { useDonghos } from '@/src/hooks/useDongho';
+import { useProjectTypes } from '@/src/hooks/useDongho';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { downloadAscodesExcel } from '@/src/lib/api/afterserviceApi';
 import type { Ascode } from '@/src/types/afterservice.types';
@@ -43,7 +43,7 @@ export default function DefectTypeManageTab() {
 
   // 데이터 조회
   const { data: ascodesData, isLoading, error } = useAscodes(projectUuid);
-  const { data: donghosData } = useDonghos(projectUuid);
+  const { data: projectTypes = [] } = useProjectTypes(projectUuid);
   const { data: partnersData } = usePartners(projectUuid);
 
   // 뮤테이션
@@ -54,14 +54,10 @@ export default function DefectTypeManageTab() {
   const ascodes = useMemo(() => ascodesData?.list || [], [ascodesData]);
   const partners = useMemo(() => partnersData?.list || [], [partnersData]);
 
-  // 타입/평수 목록 (동호 코드에서 추출)
+  // 타입/평수 목록 (project_type API에서 가져옴)
   const unitTypes = useMemo(() => {
-    const types = new Set<string>();
-    donghosData?.list?.forEach((d) => {
-      if (d.unit_type) types.add(d.unit_type);
-    });
-    return Array.from(types);
-  }, [donghosData]);
+    return projectTypes.map((type) => type.name);
+  }, [projectTypes]);
 
   // 협력사 맵 (id -> company name)
   const partnerMap = useMemo(() => {

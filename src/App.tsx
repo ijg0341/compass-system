@@ -12,7 +12,6 @@ import ASManageList from '@/src/pages/ASManageList'
 import ASManagePage from '@/src/pages/ASManagePage'
 import SmartnetList from '@/src/pages/SmartnetList'
 import SmartnetMoveCreate from '@/src/pages/SmartnetMoveCreate'
-import MemberResident from '@/src/pages/MemberResident'
 import UserManagement from '@/src/pages/UserManagement'
 import ResidenceMove from '@/src/pages/ResidenceMove'
 import ResidenceVisit from '@/src/pages/ResidenceVisit'
@@ -129,13 +128,6 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <UserManagement />
-              </AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/user/resident" element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <MemberResident />
               </AdminLayout>
             </ProtectedRoute>
           } />

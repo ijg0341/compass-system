@@ -44,6 +44,7 @@ const IMPLEMENTED_PAGES = [
   '/main',                  // Dashboard.tsx
   '/pre-visit/register',    // PrevisitRegister.tsx
   '/pre-visit/reservation', // PrevisitReservation.tsx
+  '/residence/visit',       // ResidenceVisit.tsx (입주방문등록)
   '/residence/move',        // ResidenceMove.tsx
   '/residence/as',          // ASManagePage.tsx (A/S 관리)
   '/units/list',            // HouseholdList.tsx (세대현황 - 세대목록)
@@ -52,7 +53,6 @@ const IMPLEMENTED_PAGES = [
   '/community/notice',      // CommunityNotice.tsx (커뮤니티 - 공지사항)
   '/community/document',    // CommunityDocument.tsx (커뮤니티 - 자료실)
   '/user',                  // UserManagement.tsx (사용자 관리 - 탭 통합)
-  '/user/resident',         // MemberResident.tsx
   '/smartnet/pre-visit',    // PrevisitManage.tsx
   '/smartnet/move',         // SmartnetCreate.tsx
   '/smartnet/vote',         // VoteMeetingCreate.tsx
@@ -77,7 +77,7 @@ const menuItems: NavItem[] = [
     icon: Home,
     path: '/residence',
     subMenu: [
-      { text: '입주방문등록', path: '/residence/visit-register' },
+      { text: '입주방문등록', path: '/residence/visit' },
       { text: '이사예약', path: '/residence/move' },
       { text: 'A/S 관리', path: '/residence/as' },
     ]

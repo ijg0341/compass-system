@@ -58,7 +58,11 @@ export default function DonghoTable({ data, onEdit, onDelete }: DonghoTableProps
                     <Typography fontWeight={500}>{dongho.ho}</Typography>
                   </TableCell>
                   <TableCell>{dongho.unit_type || '-'}</TableCell>
-                  <TableCell>{dongho.ev_lines?.join(', ') || '-'}</TableCell>
+                  <TableCell>
+                    {Array.isArray(dongho.ev_lines)
+                      ? dongho.ev_lines.join(', ') || '-'
+                      : dongho.ev_lines || '-'}
+                  </TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={0.5} justifyContent="center">
                       <Tooltip title="수정">

@@ -19,6 +19,7 @@ import {
   updateHousehold,
   getVisitHistory,
 } from '../lib/api/donghoApi';
+import { getProjectTypes } from '../lib/api/commonApi';
 
 import type {
   DonghoRequest,
@@ -206,5 +207,21 @@ export function useVisitHistory(projectUuid: string, donghoId: number) {
     queryFn: () => getVisitHistory(projectUuid, donghoId),
     enabled: !!projectUuid && !!donghoId,
     staleTime: 1000 * 60 * 5, // 5분
+  });
+}
+
+// =============================================================================
+// 프로젝트 타입 Hooks
+// =============================================================================
+
+/**
+ * 프로젝트 타입(평형) 목록 조회
+ */
+export function useProjectTypes(projectUuid: string) {
+  return useQuery({
+    queryKey: ['projectTypes', projectUuid],
+    queryFn: () => getProjectTypes(projectUuid),
+    enabled: !!projectUuid,
+    staleTime: 1000 * 60 * 30, // 30분 (자주 변경되지 않음)
   });
 }

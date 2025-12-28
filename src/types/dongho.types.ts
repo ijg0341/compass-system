@@ -148,6 +148,7 @@ export interface HouseholdDetail {
   level: string | null;
   // 회원 정보
   user_id: string | null;
+  user_type: number | null; // 1:입주자, 2:협력사, 3:매니저
   // 메모 (숨김 필드)
   memo: string | null;
   // 검침 정보
@@ -189,6 +190,7 @@ export interface AgentAttachFile {
   uuid: string;
   original_name: string;
   file_size: number;
+  url?: string;
 }
 
 /** 세대정보 수정 요청 */

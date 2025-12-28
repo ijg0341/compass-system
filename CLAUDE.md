@@ -56,6 +56,30 @@ import BaseDrawer, { DrawerSection, DrawerInfoTable } from '@/src/components/com
 </BaseDrawer>
 ```
 
+### ImagePreviewModal
+이미지 미리보기 모달. 파일명 클릭 시 이미지를 크게 표시.
+```tsx
+import ImagePreviewModal from '@/src/components/common/ImagePreviewModal';
+
+const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+
+// 파일명 클릭 시
+<Typography
+  sx={{ cursor: 'pointer', color: 'primary.main', textDecoration: 'underline' }}
+  onClick={() => setPreviewImage({ url: file.url, name: file.original_name })}
+>
+  {file.original_name}
+</Typography>
+
+// 모달
+<ImagePreviewModal
+  open={!!previewImage}
+  onClose={() => setPreviewImage(null)}
+  imageUrl={previewImage?.url ?? ''}
+  imageName={previewImage?.name}
+/>
+```
+
 ### 폼 테이블 패턴
 Drawer 내 폼을 테이블 레이아웃으로 구성. 라벨과 입력 필드를 2열 또는 4열로 배치.
 ```tsx
