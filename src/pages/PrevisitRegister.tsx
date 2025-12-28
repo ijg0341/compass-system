@@ -11,6 +11,7 @@ import {
   PrevisitDataFilters,
   type PrevisitDataFilter,
 } from '@/src/components/previsit';
+import VisitHistoryModal from '@/src/components/household/VisitHistoryModal';
 import {
   usePrevisits,
   usePrevisitDataList,
@@ -43,6 +44,14 @@ export default function PrevisitRegisterPage() {
     message: string;
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'info' });
+
+  // 방문이력 모달 상태
+  const [historyModal, setHistoryModal] = useState<{
+    open: boolean;
+    dong: string;
+    ho: string;
+    donghoId: number;
+  }>({ open: false, dong: '', ho: '', donghoId: 0 });
 
   // API 조회
   const { data: previsitsData } = usePrevisits(projectUuid);
@@ -98,14 +107,14 @@ export default function PrevisitRegisterPage() {
     [returnDeviceMutation]
   );
 
-  // 방문 이력 검색 (이름, 동으로 검색)
+  // 방문 이력 모달 열기
   const handleViewHistory = useCallback((visit: PrevisitData) => {
-    setFilters((prev) => ({
-      ...prev,
-      searchKeyword: visit.contractor_name || visit.visitor_name || '',
-      dong: visit.dong || '',
-    }));
-    setPage(0);
+    setHistoryModal({
+      open: true,
+      dong: visit.dong,
+      ho: visit.ho,
+      donghoId: visit.dongho_id,
+    });
   }, []);
 
   // 필터 변경
@@ -189,6 +198,15 @@ export default function PrevisitRegisterPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* 방문이력 모달 */}
+      <VisitHistoryModal
+        open={historyModal.open}
+        onClose={() => setHistoryModal((prev) => ({ ...prev, open: false }))}
+        dong={historyModal.dong}
+        ho={historyModal.ho}
+        donghoId={historyModal.donghoId}
+      />
     </Box>
   );
 }
