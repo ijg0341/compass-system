@@ -14,7 +14,6 @@ import {
   TableRow,
   CircularProgress,
   Alert,
-  Chip,
 } from '@mui/material';
 import { ColumnChart } from '@/src/components/charts/ToastChart';
 import { usePrevisitByDong } from '@/src/hooks/useStats';
@@ -200,9 +199,6 @@ export default function StatsPrevisitVisit() {
               <TableCell rowSpan={2} sx={headerCellSx}>
                 총방문율
               </TableCell>
-              <TableCell rowSpan={2} sx={headerCellSx}>
-                타입별 통계
-              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={headerCellSx}>조합</TableCell>
@@ -223,104 +219,162 @@ export default function StatsPrevisitVisit() {
           <TableBody>
             {data.by_dong?.map((dong) => (
               <Fragment key={dong.dong}>
-                {dong.types.map((type, typeIdx) => (
-                  <TableRow key={`${dong.dong}-${type.unit_type}`}>
-                    {typeIdx === 0 && (
-                      <TableCell
-                        rowSpan={dong.types.length + 1}
-                        sx={dongCellSx}
-                      >
-                        {dong.dong}
+                {dong.types.map((type, typeIdx) => {
+                  // dates 배열에서 계산 가능한 값들 산출
+                  const firstVisitSubtotal = type.first_visit_subtotal ?? (type.dates?.reduce((sum, d) => sum + (d.first_visit || 0), 0) || 0);
+                  const revisitSubtotal = type.revisit_subtotal ?? (type.dates?.reduce((sum, d) => sum + (d.revisit || 0), 0) || 0);
+                  const totalVisit = type.total_visit ?? (type.dates?.reduce((sum, d) => sum + (d.total || 0), 0) || 0);
+
+                  return (
+                    <TableRow key={`${dong.dong}-${type.unit_type}`}>
+                      {typeIdx === 0 && (
+                        <TableCell
+                          rowSpan={dong.types.length + 1}
+                          sx={dongCellSx}
+                        >
+                          {dong.dong}
+                        </TableCell>
+                      )}
+                      <TableCell sx={cellSx}>{type.unit_type}</TableCell>
+                      <TableCell sx={cellSx}>{type.total_households || '-'}</TableCell>
+                      <TableCell sx={cellSx}>{type.sale_union || '-'}</TableCell>
+                      <TableCell sx={cellSx}>{type.sale_general || '-'}</TableCell>
+                      <TableCell sx={cellSx}>{type.sale_subtotal || '-'}</TableCell>
+                      <TableCell sx={cellSx}>{type.unsold || '-'}</TableCell>
+                      {dateList.map((date) => {
+                        const dateData = type.dates?.find(
+                          (d) => d.visit_date === date
+                        );
+                        return (
+                          <Fragment key={date}>
+                            <TableCell sx={cellSx}>
+                              {dateData?.first_visit ?? '-'}
+                            </TableCell>
+                            <TableCell sx={cellSx}>
+                              {dateData?.revisit ?? '-'}
+                            </TableCell>
+                          </Fragment>
+                        );
+                      })}
+                      <TableCell sx={cellSx}>
+                        {firstVisitSubtotal || '-'}
                       </TableCell>
-                    )}
-                    <TableCell sx={cellSx}>{type.unit_type}</TableCell>
-                    <TableCell sx={cellSx}>{type.total_households}</TableCell>
-                    <TableCell sx={cellSx}>{type.sale_union || '-'}</TableCell>
-                    <TableCell sx={cellSx}>{type.sale_general || '-'}</TableCell>
-                    <TableCell sx={cellSx}>{type.sale_subtotal || '-'}</TableCell>
-                    <TableCell sx={cellSx}>{type.unsold || '-'}</TableCell>
-                    {dateList.map((date) => {
-                      const dateData = type.dates?.find(
-                        (d) => d.visit_date === date
-                      );
-                      return (
+                      <TableCell sx={cellSx}>
+                        {type.first_visit_rate
+                          ? `${type.first_visit_rate.toFixed(2)}%`
+                          : '-'}
+                      </TableCell>
+                      <TableCell sx={cellSx}>
+                        {revisitSubtotal || '-'}
+                      </TableCell>
+                      <TableCell sx={cellSx}>
+                        {type.total_rate && type.first_visit_rate
+                          ? `${(type.total_rate - type.first_visit_rate).toFixed(2)}%`
+                          : '-'}
+                      </TableCell>
+                      <TableCell sx={cellSx}>{totalVisit || '-'}</TableCell>
+                      <TableCell sx={cellSx}>
+                        {type.total_rate ? `${type.total_rate.toFixed(2)}%` : '-'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {/* 동 소계 */}
+                {(() => {
+                  // 동별 소계 계산 (dates 배열에서 직접 계산)
+                  const calcFirstVisit = dong.types.reduce((sum, t) =>
+                    sum + (t.dates?.reduce((s, d) => s + (d.first_visit || 0), 0) || 0), 0);
+                  const calcRevisit = dong.types.reduce((sum, t) =>
+                    sum + (t.dates?.reduce((s, d) => s + (d.revisit || 0), 0) || 0), 0);
+                  const calcTotal = dong.types.reduce((sum, t) =>
+                    sum + (t.dates?.reduce((s, d) => s + (d.total || 0), 0) || 0), 0);
+
+                  const subtotal = (dong.subtotal || {
+                    total_households: dong.types.reduce((sum, t) => sum + (t.total_households || 0), 0),
+                    sale_union: dong.types.reduce((sum, t) => sum + (t.sale_union || 0), 0),
+                    sale_general: dong.types.reduce((sum, t) => sum + (t.sale_general || 0), 0),
+                    sale_subtotal: dong.types.reduce((sum, t) => sum + (t.sale_subtotal || 0), 0),
+                    unsold: dong.types.reduce((sum, t) => sum + (t.unsold || 0), 0),
+                    first_visit_subtotal: calcFirstVisit,
+                    revisit_subtotal: calcRevisit,
+                    total_visit: calcTotal,
+                  }) as {
+                    total_households: number;
+                    sale_union: number;
+                    sale_general: number;
+                    sale_subtotal: number;
+                    unsold: number;
+                    first_visit_subtotal: number;
+                    revisit_subtotal: number;
+                    total_visit: number;
+                  };
+                  const totalHouseholds = subtotal.total_households || 1;
+                  const firstVisitRate = (subtotal.first_visit_subtotal / totalHouseholds) * 100;
+                  const totalRate = (subtotal.total_visit / totalHouseholds) * 100;
+                  const revisitRate = totalRate - firstVisitRate;
+
+                  // 날짜별 소계 계산
+                  const dateSubtotals: Record<string, { first_visit: number; revisit: number }> = {};
+                  dateList.forEach((date) => {
+                    dateSubtotals[date] = { first_visit: 0, revisit: 0 };
+                    dong.types.forEach((type) => {
+                      const dateData = type.dates?.find((d) => d.visit_date === date);
+                      if (dateData) {
+                        dateSubtotals[date].first_visit += dateData.first_visit || 0;
+                        dateSubtotals[date].revisit += dateData.revisit || 0;
+                      }
+                    });
+                  });
+
+                  return (
+                    <TableRow sx={{ bgcolor: 'action.selected' }}>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>계</TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.total_households || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.sale_union || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.sale_general || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.sale_subtotal || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.unsold || '-'}
+                      </TableCell>
+                      {dateList.map((date) => (
                         <Fragment key={date}>
-                          <TableCell sx={cellSx}>
-                            {dateData?.first_visit || '-'}
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {dateSubtotals[date]?.first_visit || '-'}
                           </TableCell>
-                          <TableCell sx={cellSx}>
-                            {dateData?.revisit || '-'}
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {dateSubtotals[date]?.revisit || '-'}
                           </TableCell>
                         </Fragment>
-                      );
-                    })}
-                    <TableCell sx={cellSx}>
-                      {type.first_visit_subtotal || '-'}
-                    </TableCell>
-                    <TableCell sx={cellSx}>
-                      {type.first_visit_rate
-                        ? `${type.first_visit_rate.toFixed(2)}%`
-                        : '-'}
-                    </TableCell>
-                    <TableCell sx={cellSx}>
-                      {type.revisit_subtotal || '-'}
-                    </TableCell>
-                    <TableCell sx={cellSx}>
-                      {type.total_rate
-                        ? `${(type.total_rate - type.first_visit_rate).toFixed(2)}%`
-                        : '-'}
-                    </TableCell>
-                    <TableCell sx={cellSx}>{type.total_visit || '-'}</TableCell>
-                    <TableCell sx={cellSx}>
-                      {type.total_rate ? `${type.total_rate.toFixed(2)}%` : '-'}
-                    </TableCell>
-                    <TableCell sx={{ ...cellSx, width: 150 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 0.5,
-                        }}
-                      >
-                        <Chip
-                          label={`${type.unit_type} ${type.first_visit_rate?.toFixed(0) || 0}%`}
-                          size="small"
-                          sx={{ bgcolor: '#f59e0b', color: 'white' }}
-                        />
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {/* 동 소계 */}
-                <TableRow sx={{ bgcolor: 'action.selected' }}>
-                  <TableCell sx={{ ...cellSx, fontWeight: 600 }}>계</TableCell>
-                  <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                    {dong.subtotal?.total_households || '-'}
-                  </TableCell>
-                  <TableCell colSpan={3} sx={cellSx}>
-                    -
-                  </TableCell>
-                  <TableCell sx={cellSx}>-</TableCell>
-                  {dateList.map((date) => (
-                    <Fragment key={date}>
-                      <TableCell sx={cellSx}>-</TableCell>
-                      <TableCell sx={cellSx}>-</TableCell>
-                    </Fragment>
-                  ))}
-                  <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                    {dong.subtotal?.first_visit_subtotal || '-'}
-                  </TableCell>
-                  <TableCell sx={cellSx}>-</TableCell>
-                  <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                    {dong.subtotal?.revisit_subtotal || '-'}
-                  </TableCell>
-                  <TableCell sx={cellSx}>-</TableCell>
-                  <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                    {dong.subtotal?.total_visit || '-'}
-                  </TableCell>
-                  <TableCell sx={cellSx}>-</TableCell>
-                  <TableCell sx={cellSx}>-</TableCell>
-                </TableRow>
+                      ))}
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.first_visit_subtotal || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {firstVisitRate > 0 ? `${firstVisitRate.toFixed(2)}%` : '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.revisit_subtotal || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {revisitRate > 0 ? `${revisitRate.toFixed(2)}%` : '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {subtotal.total_visit || '-'}
+                      </TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                        {totalRate > 0 ? `${totalRate.toFixed(2)}%` : '-'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })()}
               </Fragment>
             ))}
           </TableBody>
@@ -343,7 +397,10 @@ export default function StatsPrevisitVisit() {
               xAxis: { title: '동' },
               yAxis: { title: '방문 건수' },
               legend: { align: 'bottom' },
-              series: { stack: true },
+              series: {
+                stack: true,
+                dataLabels: { visible: true },
+              },
             }}
             height={350}
           />

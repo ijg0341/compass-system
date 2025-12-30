@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -56,10 +57,28 @@ const tabOptions: { value: TabType; label: string }[] = [
 
 export default function HouseholdList() {
   const { projectUuid, hasProject } = useCurrentProject();
-  const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialFilters);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // URL에서 초기값 읽기
+  const getInitialFilters = (): FilterState => ({
+    dateBegin: searchParams.get('dateBegin') || '',
+    dateEnd: searchParams.get('dateEnd') || '',
+    contractorName: searchParams.get('contractorName') || '',
+    dong: searchParams.get('dong') || '',
+    ho: searchParams.get('ho') || '',
+    tab: (searchParams.get('tab') as TabType) || 'all',
+  });
+
+  const [filters, setFilters] = useState<FilterState>(getInitialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(getInitialFilters);
+  const [page, setPage] = useState(() => {
+    const p = searchParams.get('page');
+    return p ? Math.max(0, Number(p) - 1) : 0;
+  });
+  const [rowsPerPage, setRowsPerPage] = useState(() => {
+    const size = searchParams.get('size');
+    return size ? Number(size) : 20;
+  });
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -152,11 +171,31 @@ export default function HouseholdList() {
     setFilters(initialFilters);
     setAppliedFilters(initialFilters);
     setPage(0);
+    // URL 초기화
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      ['dateBegin', 'dateEnd', 'contractorName', 'dong', 'ho', 'tab', 'page', 'size'].forEach(k => params.delete(k));
+      return params;
+    }, { replace: true });
   };
 
   const handleApply = () => {
     setAppliedFilters(filters);
     setPage(0);
+    // URL 업데이트
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      // 기존 필터 파라미터 제거
+      ['dateBegin', 'dateEnd', 'contractorName', 'dong', 'ho', 'tab', 'page'].forEach(k => params.delete(k));
+      // 값이 있는 필터만 추가
+      if (filters.dateBegin) params.set('dateBegin', filters.dateBegin);
+      if (filters.dateEnd) params.set('dateEnd', filters.dateEnd);
+      if (filters.contractorName) params.set('contractorName', filters.contractorName);
+      if (filters.dong) params.set('dong', filters.dong);
+      if (filters.ho) params.set('ho', filters.ho);
+      if (filters.tab && filters.tab !== 'all') params.set('tab', filters.tab);
+      return params;
+    }, { replace: true });
   };
 
   const handleRowClick = (row: HouseholdStatus) => {
@@ -288,10 +327,25 @@ export default function HouseholdList() {
         total={data?.total ?? 0}
         page={page}
         rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
+        onPageChange={(newPage) => {
+          setPage(newPage);
+          setSearchParams((prev) => {
+            const params = new URLSearchParams(prev);
+            if (newPage === 0) params.delete('page');
+            else params.set('page', String(newPage + 1));
+            return params;
+          }, { replace: true });
+        }}
         onRowsPerPageChange={(newRowsPerPage) => {
           setRowsPerPage(newRowsPerPage);
           setPage(0);
+          setSearchParams((prev) => {
+            const params = new URLSearchParams(prev);
+            params.delete('page');
+            if (newRowsPerPage !== 20) params.set('size', String(newRowsPerPage));
+            else params.delete('size');
+            return params;
+          }, { replace: true });
         }}
         onRowClick={handleRowClick}
         getRowKey={(row) => row.id}

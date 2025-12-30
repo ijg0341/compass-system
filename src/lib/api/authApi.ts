@@ -25,6 +25,7 @@ export const TOP_ADMIN_ROLE: UserRole = 'A1';
 export interface LoginRequest {
   user_id: string;
   password: string;
+  project_code?: string;  // 7자리 현장코드 (현장 담당자 로그인 시 필수)
 }
 
 // 로그인 응답 타입

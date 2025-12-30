@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { PieChart } from '@/src/components/charts/ToastChart';
 import { useOccupancyRate } from '@/src/hooks/useStats';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 
@@ -42,112 +43,28 @@ const rowHeaderCellSx = {
   bgcolor: 'action.hover',
 };
 
-// 반원 게이지 컴포넌트 (CSS 기반)
-function GaugeCard({
-  title,
-  value,
-  total,
-  color = '#3b82f6',
-}: {
-  title: string;
-  value: number;
-  total: number;
-  color?: string;
-}) {
-  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-  // 반원이므로 180도 기준으로 계산
-  const rotation = (percentage / 100) * 180;
-
-  return (
-    <Paper sx={{ p: 2, textAlign: 'center' }}>
-      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-        {title}
-      </Typography>
-      <Box sx={{ position: 'relative', width: 140, height: 80, mx: 'auto' }}>
-        {/* 배경 반원 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            width: 140,
-            height: 70,
-            borderRadius: '70px 70px 0 0',
-            bgcolor: 'rgba(255,255,255,0.1)',
-            overflow: 'hidden',
-          }}
-        >
-          {/* 채워지는 부분 */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: '50%',
-              width: 140,
-              height: 140,
-              transformOrigin: 'center bottom',
-              transform: `translateX(-50%) rotate(${rotation - 180}deg)`,
-              background: `conic-gradient(${color} 0deg, ${color} 180deg, transparent 180deg)`,
-              borderRadius: '50%',
-            }}
-          />
-        </Box>
-        {/* 내부 원 (도넛 효과) */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 100,
-            height: 50,
-            borderRadius: '50px 50px 0 0',
-            bgcolor: 'background.paper',
-          }}
-        />
-        {/* 텍스트 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 5,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="h6" fontWeight={700}>
-            {value}/{total}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {percentage}%
-          </Typography>
-        </Box>
-      </Box>
-    </Paper>
-  );
-}
-
 export default function StatsOccupancyRate() {
   const { projectUuid } = useCurrentProject();
   const { data, isLoading, error } = useOccupancyRate(projectUuid || '');
 
-  const gaugeData = useMemo(() => {
+  // 도넛 차트 데이터 생성
+  const donutCharts = useMemo(() => {
     if (!data) return null;
+    const total = data.total_households || 0;
+
+    const createChartData = (value: number, label: string) => ({
+      categories: [label],
+      series: [
+        { name: label, data: value },
+        { name: '미완료', data: Math.max(0, total - value) },
+      ],
+    });
+
     return {
-      occupied: {
-        value: data.occupied_count || 0,
-        total: data.total_households || 0,
-      },
-      certificate: {
-        value: data.certificate_count || 0,
-        total: data.total_households || 0,
-      },
-      key: {
-        value: data.key_count || 0,
-        total: data.total_households || 0,
-      },
-      meter: {
-        value: data.meter_count || 0,
-        total: data.total_households || 0,
-      },
+      occupied: createChartData(data.occupied_count || 0, '입주'),
+      certificate: createChartData(data.certificate_count || 0, '입주증'),
+      key: createChartData(data.key_count || 0, '키불출'),
+      meter: createChartData(data.meter_count || 0, '검침'),
     };
   }, [data]);
 
@@ -175,50 +92,168 @@ export default function StatsOccupancyRate() {
     );
   }
 
+  const total = data.total_households || 0;
+
   return (
     <Box>
-      {/* 게이지 차트들 */}
+      {/* 도넛 차트들 */}
       <Box
         sx={{
           display: 'flex',
           flexWrap: 'wrap',
           gap: 3,
           mb: 3,
-          '& > *': { flex: { xs: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 150 },
+          '& > *': { flex: { xs: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 200 },
         }}
       >
-        <Box>
-          <GaugeCard
-            title="입주"
-            value={gaugeData?.occupied.value || 0}
-            total={gaugeData?.occupied.total || 0}
-            color="#ef4444"
-          />
-        </Box>
-        <Box>
-          <GaugeCard
-            title="입주증"
-            value={gaugeData?.certificate.value || 0}
-            total={gaugeData?.certificate.total || 0}
-            color="#f59e0b"
-          />
-        </Box>
-        <Box>
-          <GaugeCard
-            title="키불출"
-            value={gaugeData?.key.value || 0}
-            total={gaugeData?.key.total || 0}
-            color="#3b82f6"
-          />
-        </Box>
-        <Box>
-          <GaugeCard
-            title="검침"
-            value={gaugeData?.meter.value || 0}
-            total={gaugeData?.meter.total || 0}
-            color="#22c55e"
-          />
-        </Box>
+        {donutCharts && (
+          <>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                입주
+              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <PieChart
+                  data={donutCharts.occupied}
+                  options={{
+                    chart: { title: '' },
+                    series: {
+                      radiusRange: { inner: '75%', outer: '100%' },
+                      dataLabels: { visible: false },
+                    },
+                    legend: { visible: false },
+                    theme: { series: { colors: ['#e53935', '#757575'] } },
+                  }}
+                  height={180}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    {data.occupied_count || 0}/{total}
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700} color="error.main">
+                    {total > 0 ? ((data.occupied_count || 0) / total * 100).toFixed(1) : 0}%
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                입주증
+              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <PieChart
+                  data={donutCharts.certificate}
+                  options={{
+                    chart: { title: '' },
+                    series: {
+                      radiusRange: { inner: '75%', outer: '100%' },
+                      dataLabels: { visible: false },
+                    },
+                    legend: { visible: false },
+                    theme: { series: { colors: ['#e53935', '#757575'] } },
+                  }}
+                  height={180}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    {data.certificate_count || 0}/{total}
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700} color="error.main">
+                    {total > 0 ? ((data.certificate_count || 0) / total * 100).toFixed(1) : 0}%
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                키불출
+              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <PieChart
+                  data={donutCharts.key}
+                  options={{
+                    chart: { title: '' },
+                    series: {
+                      radiusRange: { inner: '75%', outer: '100%' },
+                      dataLabels: { visible: false },
+                    },
+                    legend: { visible: false },
+                    theme: { series: { colors: ['#e53935', '#757575'] } },
+                  }}
+                  height={180}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    {data.key_count || 0}/{total}
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700} color="error.main">
+                    {total > 0 ? ((data.key_count || 0) / total * 100).toFixed(1) : 0}%
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                검침
+              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <PieChart
+                  data={donutCharts.meter}
+                  options={{
+                    chart: { title: '' },
+                    series: {
+                      radiusRange: { inner: '75%', outer: '100%' },
+                      dataLabels: { visible: false },
+                    },
+                    legend: { visible: false },
+                    theme: { series: { colors: ['#e53935', '#757575'] } },
+                  }}
+                  height={180}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    {data.meter_count || 0}/{total}
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700} color="error.main">
+                    {total > 0 ? ((data.meter_count || 0) / total * 100).toFixed(1) : 0}%
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </>
+        )}
       </Box>
 
       {/* 상세 테이블 */}

@@ -7,6 +7,7 @@ import AdminLayout from '@/src/components/layout/AdminLayout'
 
 // Pages
 import Login from '@/src/pages/Login'
+import ProjectLogin from '@/src/pages/ProjectLogin'
 import Dashboard from '@/src/pages/Dashboard'
 import ASManageList from '@/src/pages/ASManageList'
 import ASManagePage from '@/src/pages/ASManagePage'
@@ -54,7 +55,8 @@ function App() {
         <LenisScroll />
         <Routes>
           {/* 로그인 */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<ProjectLogin />} />
+          <Route path="/login/admin" element={<Login />} />
 
           {/* Root redirect to main */}
           <Route path="/" element={<Navigate to="/main" replace />} />

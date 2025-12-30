@@ -13,7 +13,8 @@ type ChartType =
   | 'line'
   | 'area'
   | 'pie'
-  | 'radialBar';
+  | 'radialBar'
+  | 'heatmap';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ChartOptions = Record<string, any>;
@@ -99,6 +100,18 @@ export default function ToastChart({
     // 컨테이너 초기화
     el.innerHTML = '';
 
+    // 옵션에서 전달된 theme과 darkTheme 병합
+    const mergedTheme = {
+      ...darkTheme,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...((options as Record<string, any>).theme || {}),
+      series: {
+        ...darkTheme.series,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...((options as Record<string, any>).theme?.series || {}),
+      },
+    };
+
     const chartOptions = {
       ...options,
       chart: {
@@ -107,7 +120,7 @@ export default function ToastChart({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...((options as Record<string, any>).chart || {}),
       },
-      theme: darkTheme,
+      theme: mergedTheme,
     };
 
     // 약간의 딜레이 후 차트 생성 (DOM 렌더링 대기)
@@ -133,6 +146,9 @@ export default function ToastChart({
             break;
           case 'radialBar':
             chartRef.current = Chart.radialBarChart({ el, data, options: chartOptions });
+            break;
+          case 'heatmap':
+            chartRef.current = Chart.heatmapChart({ el, data, options: chartOptions });
             break;
         }
       } catch (e) {
@@ -204,4 +220,8 @@ export function PieChart(props: BaseChartProps) {
 
 export function RadialBarChart(props: BaseChartProps) {
   return <ToastChart type="radialBar" {...props} />;
+}
+
+export function HeatmapChart(props: BaseChartProps) {
+  return <ToastChart type="heatmap" {...props} />;
 }

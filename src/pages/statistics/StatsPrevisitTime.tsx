@@ -15,7 +15,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ColumnChart } from '@/src/components/charts/ToastChart';
+import { HeatmapChart } from '@/src/components/charts/ToastChart';
 import { usePrevisitByTime } from '@/src/hooks/useStats';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 
@@ -48,38 +48,45 @@ export default function StatsPrevisitTime() {
   const { projectUuid } = useCurrentProject();
   const { data, isLoading, error } = usePrevisitByTime(projectUuid || '');
 
-  // 시간대별 방문 데이터 생성 (ColumnChart용)
-  const chartData = useMemo(() => {
+  // 시간대별 방문 데이터 생성 (Toast UI Heatmap용)
+  const heatmapData = useMemo(() => {
     if (!data?.by_date?.length || !data?.hours?.length) return null;
 
-    const days = ['월', '화', '수', '목', '금', '토', '일'];
+    const days = ['일', '월', '화', '수', '목', '금', '토']; // JS Date.getDay() 순서: 0=일, 1=월, ...
+    const dayLabels = ['월', '화', '수', '목', '금', '토', '일']; // 표시용
 
     // 요일별 시간대별 방문 합계 계산
-    const dayHourMap: Record<string, Record<number, number>> = {};
-    days.forEach((day) => {
-      dayHourMap[day] = {};
-      data.hours.forEach((hour) => {
-        dayHourMap[day][hour] = 0;
-      });
+    const dayHourMap: Record<string, number[]> = {};
+    dayLabels.forEach((day) => {
+      dayHourMap[day] = data.hours.map(() => 0);
     });
 
     data.by_date.forEach((dateItem) => {
-      const dayOfWeek = dateItem.day_of_week || '월';
+      // date 문자열에서 요일 계산
+      const date = new Date(dateItem.date);
+      const dayIndex = date.getDay(); // 0=일, 1=월, 2=화, ...
+      const dayOfWeek = days[dayIndex];
+
       dateItem.visit?.forEach((hourItem) => {
-        if (dayHourMap[dayOfWeek] && data.hours.includes(hourItem.hour)) {
-          dayHourMap[dayOfWeek][hourItem.hour] += hourItem.total;
+        const hourIdx = data.hours.indexOf(hourItem.hour);
+        if (dayHourMap[dayOfWeek] && hourIdx >= 0) {
+          dayHourMap[dayOfWeek][hourIdx] += hourItem.total;
         }
       });
     });
 
-    // Toast UI ColumnChart series 형식
-    const series = days.map((day) => ({
-      name: day,
-      data: data.hours.map((hour) => dayHourMap[day][hour] || 0),
-    }));
+    // X축: 요일, Y축: 시간대
+    // series는 Y축(시간대) 기준으로 각 X축(요일) 값의 배열
+    const hourLabels = data.hours.map((h) => `${h}시`);
+    const series = data.hours.map((hour, hourIdx) =>
+      dayLabels.map((day) => dayHourMap[day][hourIdx])
+    );
 
     return {
-      categories: data.hours.map((h) => `${h}시`),
+      categories: {
+        x: dayLabels,
+        y: hourLabels,
+      },
       series,
     };
   }, [data]);
@@ -254,25 +261,24 @@ export default function StatsPrevisitTime() {
         </Table>
       </TableContainer>
 
-      {/* 시간대별 방문 차트 */}
-      {chartData && (
+      {/* 시간대별 방문 히트맵 */}
+      {heatmapData && (
         <Paper sx={{ p: 2 }}>
           <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
             요일/시간대별 방문 현황
           </Typography>
-          <ColumnChart
-            data={chartData}
+          <HeatmapChart
+            data={heatmapData}
             options={{
               chart: { title: '' },
-              xAxis: { title: '시간대' },
-              yAxis: { title: '방문 수' },
-              legend: { visible: true },
+              xAxis: { title: '요일' },
+              yAxis: { title: '시간대' },
+              legend: { align: 'right' },
               series: {
-                stack: true,
-                dataLabels: { visible: false },
+                dataLabels: { visible: true },
               },
             }}
-            height={350}
+            height={400}
           />
         </Paper>
       )}

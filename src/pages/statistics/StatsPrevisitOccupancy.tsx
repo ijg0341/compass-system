@@ -176,6 +176,10 @@ export default function StatsPrevisitOccupancy() {
                   chart: { title: '' },
                   legend: { align: 'right' },
                   series: {
+                    radiusRange: {
+                      inner: '40%',
+                      outer: '100%',
+                    },
                     dataLabels: {
                       visible: true,
                       pieSeriesName: { visible: true },

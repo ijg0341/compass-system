@@ -378,6 +378,7 @@ export default function ProjectManage() {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, width: 120 }}>건설사</TableCell>
                 <TableCell sx={{ fontWeight: 600, width: 150 }}>현장명</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 100 }}>현장코드</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>기간</TableCell>
                 <TableCell sx={{ fontWeight: 600, width: 150 }} align="center">
                   관리
@@ -390,6 +391,7 @@ export default function ProjectManage() {
                   <TableCell align="center">{project.id}</TableCell>
                   <TableCell>{getCompanyName(project.construction_company_id)}</TableCell>
                   <TableCell>{project.name}</TableCell>
+                  <TableCell>{project.project_code || '-'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto 1fr', gap: 0.5, fontSize: '0.75rem' }}>
                       <Typography variant="caption" fontWeight={600}>BS점검</Typography>
@@ -428,7 +430,7 @@ export default function ProjectManage() {
               ))}
               {projects.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     등록된 현장이 없습니다.
                   </TableCell>
                 </TableRow>

@@ -1,7 +1,8 @@
 /**
  * 통계 > A/S (탭 레이아웃)
  */
-import { useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import StatsASByDong from './StatsASByDong';
 import StatsASByWorkType from './StatsASByWorkType';
@@ -26,11 +27,22 @@ function TabPanel({ children, value, index }: TabPanelProps) {
   );
 }
 
+const TABS = ['dong', 'worktype', 'detail', 'completion'] as const;
+
 export default function StatsAS() {
-  const [tabValue, setTabValue] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabValue = useMemo(() => {
+    const tab = searchParams.get('tab');
+    const index = TABS.indexOf(tab as typeof TABS[number]);
+    return index >= 0 ? index : 0;
+  }, [searchParams]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+    setSearchParams((prev) => {
+      prev.set('tab', TABS[newValue]);
+      return prev;
+    });
   };
 
   return (

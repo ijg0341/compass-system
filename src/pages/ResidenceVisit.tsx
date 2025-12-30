@@ -283,7 +283,17 @@ export default function ResidenceVisitPage() {
       id: 'visit_purpose',
       label: '방문목적',
       minWidth: 150,
-      render: (row) => row.visit_purpose?.join(', ') || '-',
+      render: (row) => {
+        if (!row.visit_purpose) return '-';
+        if (Array.isArray(row.visit_purpose)) {
+          return row.visit_purpose
+            .map((p: string | { purpose: string }) => (typeof p === 'object' && p !== null ? p.purpose : p))
+            .join(', ');
+        }
+        return typeof row.visit_purpose === 'object'
+          ? (row.visit_purpose as { purpose: string }).purpose
+          : row.visit_purpose;
+      },
     },
     {
       id: 'work_period',
