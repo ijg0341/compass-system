@@ -193,6 +193,5 @@ export async function createOrUpdateMoveSettings(
  * 이사예약 URL 생성
  */
 export function getMoveUrl(uuid: string): string {
-  // 실제 서비스 URL로 변경 필요
-  return `${window.location.origin}/move/${uuid}`;
+  return `https://customer.compass1998.com/move/${uuid}/`;
 }

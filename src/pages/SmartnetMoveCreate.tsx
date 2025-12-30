@@ -266,17 +266,35 @@ export default function SmartnetMoveCreatePage() {
               >
                 {createMutation.isPending ? <CircularProgress size={20} /> : '등록하기'}
               </Button>
-
-              {settingsUuid && (
-                <Button
-                  variant="outlined"
-                  startIcon={<ContentCopyIcon />}
-                  onClick={handleCopyUrl}
-                >
-                  URL 복사
-                </Button>
-              )}
             </Box>
+
+            {/* 이사예약 URL 영역 */}
+            {settingsUuid && (
+              <Box sx={{ mt: 3, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                  이사예약 URL
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    value={getMoveUrl(settingsUuid)}
+                    InputProps={{
+                      readOnly: true,
+                      sx: { bgcolor: 'background.paper' },
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    startIcon={<ContentCopyIcon />}
+                    onClick={handleCopyUrl}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    복사
+                  </Button>
+                </Box>
+              </Box>
+            )}
           </>
         )}
       </Paper>
