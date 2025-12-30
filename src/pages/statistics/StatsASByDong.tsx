@@ -54,23 +54,32 @@ export default function StatsASByDong() {
     date_end: dateFilter,
   });
 
-  // 차트 데이터
+  // 차트 데이터 - types 배열에서 합산
   const chartData = useMemo(() => {
-    if (!data?.by_dong) return null;
+    if (!data?.by_dong || data.by_dong.length === 0) return null;
 
     const categories = data.by_dong.map((dong) => dong.dong);
+
+    // types 배열에서 합산 (subtotal이 없으므로)
+    const receivedData = data.by_dong.map((dong) => {
+      if (dong.subtotal?.received_total != null) {
+        return dong.subtotal.received_total;
+      }
+      return dong.types?.reduce((sum, t) => sum + (t.received?.total || 0), 0) ?? 0;
+    });
+
+    const completedData = data.by_dong.map((dong) => {
+      if (dong.subtotal?.completed_total != null) {
+        return dong.subtotal.completed_total;
+      }
+      return dong.types?.reduce((sum, t) => sum + (t.completed?.total || 0), 0) ?? 0;
+    });
 
     return {
       categories,
       series: [
-        {
-          name: '접수',
-          data: data.by_dong.map((dong) => dong.subtotal?.received_total || 0),
-        },
-        {
-          name: '처리',
-          data: data.by_dong.map((dong) => dong.subtotal?.completed_total || 0),
-        },
+        { name: '접수', data: receivedData },
+        { name: '처리', data: completedData },
       ],
     };
   }, [data]);
@@ -200,38 +209,47 @@ export default function StatsASByDong() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {/* 동 소계 */}
-                    <TableRow sx={{ bgcolor: 'action.selected' }}>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>계</TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.total_households || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.received_today || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.received_total || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.completed_yesterday || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.completed_total || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.completed_rate
-                          ? `${dong.subtotal.completed_rate.toFixed(1)}%`
-                          : '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.pending_total || '-'}
-                      </TableCell>
-                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
-                        {dong.subtotal?.pending_rate
-                          ? `${dong.subtotal.pending_rate.toFixed(1)}%`
-                          : '-'}
-                      </TableCell>
-                    </TableRow>
+                    {/* 동 소계 - types에서 합산 */}
+                    {(() => {
+                      const totalHouseholds = dong.subtotal?.total_households ?? (dong.types?.reduce((s, t) => s + (t.total_households || 0), 0) || 0);
+                      const receivedToday = dong.subtotal?.received_today ?? (dong.types?.reduce((s, t) => s + (t.received?.today || 0), 0) || 0);
+                      const receivedTotal = dong.subtotal?.received_total ?? (dong.types?.reduce((s, t) => s + (t.received?.total || 0), 0) || 0);
+                      const completedYesterday = dong.subtotal?.completed_yesterday ?? (dong.types?.reduce((s, t) => s + (t.completed?.yesterday || 0), 0) || 0);
+                      const completedTotal = dong.subtotal?.completed_total ?? (dong.types?.reduce((s, t) => s + (t.completed?.total || 0), 0) || 0);
+                      const completedRate = receivedTotal > 0 ? (completedTotal / receivedTotal) * 100 : 0;
+                      const pendingTotal = dong.subtotal?.pending_total ?? (dong.types?.reduce((s, t) => s + (t.pending?.total || 0), 0) || 0);
+                      const pendingRate = receivedTotal > 0 ? (pendingTotal / receivedTotal) * 100 : 0;
+
+                      return (
+                        <TableRow sx={{ bgcolor: 'action.selected' }}>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>계</TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {totalHouseholds || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {receivedToday || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {receivedTotal || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {completedYesterday || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {completedTotal || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {completedRate > 0 ? `${completedRate.toFixed(1)}%` : '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {pendingTotal || '-'}
+                          </TableCell>
+                          <TableCell sx={{ ...cellSx, fontWeight: 600 }}>
+                            {pendingRate > 0 ? `${pendingRate.toFixed(1)}%` : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })()}
                   </Fragment>
                 ))}
               </TableBody>
@@ -245,25 +263,24 @@ export default function StatsASByDong() {
             <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
               동별 접수/처리 현황
             </Typography>
-            {chartData && (
+            {chartData && chartData.categories.length > 0 ? (
               <ColumnChart
                 data={chartData}
                 options={{
                   chart: { title: '' },
-                  xAxis: { title: '동' },
+                  xAxis: { title: '동', label: { interval: 0 } },
                   yAxis: { title: '건수' },
                   legend: { align: 'bottom' },
                   series: {
-                    dataLabels: { visible: true },
-                  },
-                  theme: {
-                    series: {
-                      colors: ['#7c3aed', '#ec4899'],
-                    },
+                    dataLabels: { visible: false },
                   },
                 }}
                 height={350}
               />
+            ) : (
+              <Box sx={{ py: 4, textAlign: 'center' }}>
+                <Typography color="text.secondary">차트 데이터가 없습니다.</Typography>
+              </Box>
             )}
           </Paper>
         </Box>
