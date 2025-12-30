@@ -92,6 +92,8 @@ export interface BoardPostRequest {
 export interface BoardListParams {
   page?: number;
   size?: number;
+  offset?: number;
+  limit?: number;
   searchType?: 'subject' | 'text' | 'admin_user_name'; // 제목, 내용, 작성자
   searchKeyword?: string;
   board_category_id?: number;

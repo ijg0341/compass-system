@@ -31,6 +31,22 @@ import CommunityDocument from '@/src/pages/CommunityDocument'
 import CommunityDocumentDetail from '@/src/pages/CommunityDocumentDetail'
 import CommunityDocumentForm from '@/src/pages/CommunityDocumentForm'
 
+// Admin Pages (관리자 전용)
+import PopupNoticeList from '@/src/pages/admin/PopupNoticeList'
+import PopupNoticeDetail from '@/src/pages/admin/PopupNoticeDetail'
+import PopupNoticeForm from '@/src/pages/admin/PopupNoticeForm'
+import CompanyManage from '@/src/pages/admin/CompanyManage'
+import ProjectManage from '@/src/pages/admin/ProjectManage'
+import AdminUserManage from '@/src/pages/admin/AdminUserManage'
+
+// Statistics Pages (통계)
+import {
+  StatsPrevisit,
+  StatsAS,
+  StatsOccupancy,
+  StatsDashboard,
+} from '@/src/pages/statistics'
+
 function App() {
   return (
     <QueryProvider>
@@ -114,11 +130,38 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* 통계 > 사전방문 */}
+          <Route path="/statistics/previsit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <StatsPrevisit />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
           {/* 통계 > A/S */}
           <Route path="/statistics/as" element={
             <ProtectedRoute>
               <AdminLayout>
-                <ASManageList />
+                <StatsAS />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 통계 > 입주관리 */}
+          <Route path="/statistics/occupancy" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <StatsOccupancy />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 통계 > 현장관리 */}
+          <Route path="/statistics/dashboard" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <StatsDashboard />
               </AdminLayout>
             </ProtectedRoute>
           } />
@@ -250,6 +293,63 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <CommunityDocumentForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 관리자 전용 - 팝업공지 */}
+          <Route path="/admin/popup-notice" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <PopupNoticeList />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/popup-notice/create" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <PopupNoticeForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/popup-notice/:id" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <PopupNoticeDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/popup-notice/:id/edit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <PopupNoticeForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 관리자 전용 - 건설사 관리 */}
+          <Route path="/admin/company" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CompanyManage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 관리자 전용 - 현장 관리 */}
+          <Route path="/admin/project" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ProjectManage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* 관리자 전용 - 관리자 관리 (A1 only) */}
+          <Route path="/admin/manager" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminUserManage />
               </AdminLayout>
             </ProtectedRoute>
           } />

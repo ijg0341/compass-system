@@ -10,23 +10,29 @@ import {
   FormControlLabel,
   Select,
   MenuItem,
+  Divider,
   type SelectChangeEvent,
 } from '@mui/material';
-import { Notifications, AccountCircle, Business } from '@mui/icons-material';
+import { Notifications, AccountCircle, Business, AdminPanelSettings } from '@mui/icons-material';
 import { useMenuStore } from '@/src/stores/menuStore';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useProjectUrlSync } from '@/src/hooks/useProjectUrlSync';
+import { useAuthStore } from '@/src/stores/authStore';
+import { ADMIN_MODE_PROJECT } from '@/src/stores/projectStore';
 
 export default function HeaderBar() {
   const { isCompact, setIsCompact } = useMenuStore();
-  const { projects, projectUuid, projectName } = useCurrentProject();
+  const { projects, projectUuid, projectName, isAdminMode } = useCurrentProject();
   const { switchProject } = useProjectUrlSync();
+  const { canAccessAdminMode, user } = useAuthStore();
 
   const handleProjectChange = (event: SelectChangeEvent<string>) => {
+    // switchProject가 스토어 업데이트 + 네비게이션을 모두 처리
     switchProject(event.target.value);
   };
 
-  const hasMultipleProjects = projects.length > 1;
+  const showAdminOption = canAccessAdminMode();
+  const hasMultipleProjects = projects.length > 1 || showAdminOption;
 
   return (
     <AppBar
@@ -62,10 +68,12 @@ export default function HeaderBar() {
 
         {/* 프로젝트 선택 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-          <Business fontSize="small" sx={{ color: 'text.secondary' }} />
+          {!isAdminMode && (
+            <Business fontSize="small" sx={{ color: 'text.secondary' }} />
+          )}
           {hasMultipleProjects ? (
             <Select
-              value={projectUuid}
+              value={isAdminMode ? ADMIN_MODE_PROJECT.uuid : projectUuid}
               onChange={handleProjectChange}
               size="small"
               variant="standard"
@@ -75,12 +83,29 @@ export default function HeaderBar() {
                   py: 0.5,
                   fontWeight: 600,
                   fontSize: '0.875rem',
+                  color: isAdminMode ? 'warning.main' : 'text.primary',
                 },
                 '&:before, &:after': {
                   display: 'none',
                 },
               }}
             >
+              {/* 관리자 전용 옵션 (A1, A2만 표시) */}
+              {showAdminOption && (
+                <MenuItem
+                  value={ADMIN_MODE_PROJECT.uuid}
+                  sx={{
+                    color: 'warning.main',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AdminPanelSettings fontSize="small" />
+                    {ADMIN_MODE_PROJECT.name}
+                  </Box>
+                </MenuItem>
+              )}
+              {showAdminOption && projects.length > 0 && <Divider />}
               {projects.map((p) => (
                 <MenuItem key={p.uuid} value={p.uuid}>
                   {p.name}
@@ -131,7 +156,7 @@ export default function HeaderBar() {
           {/* 사용자 정보 */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, gap: 1 }}>
             <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
-              관리자님
+              {user?.name || '사용자'}님
             </Typography>
             <IconButton color="inherit" size="small">
               <AccountCircle fontSize="small" />

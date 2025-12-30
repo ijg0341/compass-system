@@ -18,7 +18,6 @@ import {
   Settings,
   People,
   Language,
-  AdminPanelSettings,
   KeyboardArrowDown,
   CalendarMonth,
   Apartment,
@@ -49,7 +48,10 @@ const IMPLEMENTED_PAGES = [
   '/residence/as',          // ASManagePage.tsx (A/S 관리)
   '/units/list',            // HouseholdList.tsx (세대현황 - 세대목록)
   '/units/floor-plan',      // HouseholdFloorPlan.tsx (세대현황 - 현황입면도)
-  '/statistics/as',         // ASManageList.tsx
+  '/statistics/previsit',   // StatsPrevisit.tsx (통계 - 사전방문)
+  '/statistics/as',         // StatsAS.tsx (통계 - A/S)
+  '/statistics/occupancy',  // StatsOccupancy.tsx (통계 - 입주관리)
+  '/statistics/dashboard',  // StatsDashboard.tsx (통계 - 현장관리)
   '/community/notice',      // CommunityNotice.tsx (커뮤니티 - 공지사항)
   '/community/document',    // CommunityDocument.tsx (커뮤니티 - 자료실)
   '/user',                  // UserManagement.tsx (사용자 관리 - 탭 통합)
@@ -96,10 +98,10 @@ const menuItems: NavItem[] = [
     icon: BarChart,
     path: '/statistics',
     subMenu: [
-      { text: '사전방문', path: '/statistics/pre-visit' },
+      { text: '사전방문', path: '/statistics/previsit' },
       { text: 'A/S', path: '/statistics/as' },
-      { text: '입주관리', path: '/statistics/residence' },
-      { text: '현장관리', path: '/statistics/site' },
+      { text: '입주관리', path: '/statistics/occupancy' },
+      { text: '현장관리', path: '/statistics/dashboard' },
     ]
   },
   {
@@ -146,17 +148,6 @@ const menuItems: NavItem[] = [
       { text: '사전방문 생성', path: '/smartnet/pre-visit' },
       { text: '이사예약 생성', path: '/smartnet/move' },
       { text: '전자투표 생성', path: '/smartnet/vote' },
-    ]
-  },
-  {
-    text: '관리자 전용',
-    icon: AdminPanelSettings,
-    path: '/admin',
-    subMenu: [
-      { text: '팝업공지등록', path: '/admin/popup-notice' },
-      { text: '건설사 관리', path: '/admin/constructor' },
-      { text: '현장 관리', path: '/admin/site' },
-      { text: '관리자 관리', path: '/admin/manager' },
     ]
   },
 ];

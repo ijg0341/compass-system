@@ -2,7 +2,7 @@
  * 인증 상태 관리 Store (Zustand)
  */
 import { create } from 'zustand';
-import { User, login as loginApi, logout as logoutApi, getMe, LoginRequest } from '@/src/lib/api/authApi';
+import { User, login as loginApi, logout as logoutApi, getMe, LoginRequest, SUPER_ADMIN_ROLES, TOP_ADMIN_ROLE, UserRole } from '@/src/lib/api/authApi';
 import { apiClient } from '@/src/lib/api/client';
 import { useProjectStore } from './projectStore';
 
@@ -18,9 +18,14 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   clearError: () => void;
+
+  // Getters
+  canAccessAdminMode: () => boolean;  // 관리자 전용 모드 접근 가능 여부 (A1, A2)
+  canManageAdmins: () => boolean;     // 관리자 관리 접근 가능 여부 (A1만)
+  getUserRole: () => UserRole | null;
 }
 
-export const useAuthStore = create<AuthState>((set) => {
+export const useAuthStore = create<AuthState>((set, get) => {
   // 401 에러 시 자동 로그아웃
   apiClient.setAuthExpiredCallback(() => {
     set({ user: null, isAuthenticated: false });
@@ -87,5 +92,21 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     clearError: () => set({ error: null }),
+
+    // Getters
+    canAccessAdminMode: () => {
+      const { user } = get();
+      return user?.role ? SUPER_ADMIN_ROLES.includes(user.role) : false;
+    },
+
+    canManageAdmins: () => {
+      const { user } = get();
+      return user?.role === TOP_ADMIN_ROLE;
+    },
+
+    getUserRole: () => {
+      const { user } = get();
+      return user?.role || null;
+    },
   };
 });

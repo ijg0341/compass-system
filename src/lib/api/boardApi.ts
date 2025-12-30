@@ -133,3 +133,50 @@ export const updateDocument = (projectUuid: string, id: number, data: Partial<Bo
 
 export const deleteDocument = (projectUuid: string, id: number) =>
   deleteBoardPost(projectUuid, 'document', id);
+
+// =============================================================================
+// 팝업공지 전용 API (편의 함수)
+// =============================================================================
+
+export const getPopups = (projectUuid: string, params?: BoardListParams) =>
+  getBoardPosts(projectUuid, 'popup', params);
+
+export const getPopup = (projectUuid: string, id: number) =>
+  getBoardPost(projectUuid, 'popup', id);
+
+/**
+ * 현재 활성화된 팝업공지 조회
+ * notice_begin <= 오늘 <= notice_end 이고 board_hidden = 0인 팝업만 조회
+ */
+export async function getActivePopups(projectUuid: string): Promise<BoardPost[]> {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // 목록 조회 (비공개 제외)
+  const listData = await getBoardPosts(projectUuid, 'popup', {
+    board_hidden: 0,
+    limit: 100,
+  });
+
+  // 날짜 필터링 (notice_begin <= today <= notice_end)
+  const activePopups: BoardPost[] = [];
+
+  for (const item of listData.list) {
+    // 상세 조회하여 board_extra 확인
+    try {
+      const detail = await getBoardPost(projectUuid, 'popup', item.id);
+      const noticeBegin = detail.board_extra?.notice_begin;
+      const noticeEnd = detail.board_extra?.notice_end;
+
+      // 시작일 체크
+      if (noticeBegin && noticeBegin > today) continue;
+      // 종료일 체크 (종료일이 없으면 무기한)
+      if (noticeEnd && noticeEnd < today) continue;
+
+      activePopups.push(detail);
+    } catch {
+      // 상세 조회 실패 시 스킵
+    }
+  }
+
+  return activePopups;
+}

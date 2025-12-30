@@ -8,9 +8,18 @@ export interface User {
   id: number;
   user_id: string;
   name: string;
-  role: string;
+  role: UserRole;
   company_id: number;
 }
+
+// 사용자 권한 타입
+export type UserRole = 'A1' | 'A2' | 'A3' | 'B1' | 'B2' | 'B3' | 'B4' | 'C1' | 'D1';
+
+// 관리자 전용 접근 가능 권한 (A1: C총괄, A2: C관리자)
+export const SUPER_ADMIN_ROLES: UserRole[] = ['A1', 'A2'];
+
+// A1만 접근 가능한 권한
+export const TOP_ADMIN_ROLE: UserRole = 'A1';
 
 // 로그인 요청 타입
 export interface LoginRequest {
