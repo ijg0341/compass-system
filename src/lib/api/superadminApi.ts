@@ -137,6 +137,7 @@ export interface ProjectType {
   name: string;
   floorplan_file_id: number | null;
   floorplan_file?: S3File | null;
+  floorplan_file_url?: string | null;
   give_items: string[];
 }
 

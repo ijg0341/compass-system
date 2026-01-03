@@ -2,7 +2,7 @@
  * 관리자 전용 - 타입 관리 모달
  * 기획서 CP-SA-21-003
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -24,7 +24,8 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Close, Delete } from '@mui/icons-material';
-import { projectTypeApi, type ProjectType, type ProjectTypeCreateRequest } from '@/src/lib/api/superadminApi';
+import { projectTypeApi, fileApi, type ProjectType, type ProjectTypeCreateRequest } from '@/src/lib/api/superadminApi';
+import ImagePreviewModal from '@/src/components/common/ImagePreviewModal';
 
 interface ProjectTypeModalProps {
   open: boolean;
@@ -34,6 +35,7 @@ interface ProjectTypeModalProps {
 
 export default function ProjectTypeModal({ open, onClose, projectUuid }: ProjectTypeModalProps) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 폼 상태
   const [editMode, setEditMode] = useState(false);
@@ -42,10 +44,16 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
   const [giveItems, setGiveItems] = useState<string[]>([]);
   const [newGiveItem, setNewGiveItem] = useState('');
 
+  // 파일 상태
+  const [floorplanFile, setFloorplanFile] = useState<File | null>(null);
+  const [floorplanFileId, setFloorplanFileId] = useState<number | null>(null);
+  const [floorplanPreview, setFloorplanPreview] = useState<string | null>(null);
+
   // 다이얼로그 상태
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // 타입 목록 조회
   const { data, isLoading } = useQuery({
@@ -70,9 +78,17 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
         throw new Error('타입/평형을 입력하세요.');
       }
 
+      // 새 파일이 있으면 먼저 업로드
+      let fileId = floorplanFileId;
+      if (floorplanFile) {
+        const uploadRes = await fileApi.upload(floorplanFile);
+        fileId = uploadRes.data.id;
+      }
+
       const data: ProjectTypeCreateRequest = {
         name: typeName.trim(),
         give_items: giveItems.length > 0 ? giveItems : null,
+        floorplan_file_id: fileId,
       };
 
       if (editMode && editId) {
@@ -101,7 +117,7 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
     },
   });
 
-  const handleEdit = (type: ProjectType) => {
+  const handleEdit = async (type: ProjectType) => {
     setEditMode(true);
     setEditId(type.id);
     setTypeName(type.name);
@@ -113,6 +129,18 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
       items = type.give_items.split(',').map((s) => s.trim()).filter(Boolean);
     }
     setGiveItems(items);
+
+    // 상세 조회로 floorplan_file_url 가져오기
+    setFloorplanFile(null);
+    try {
+      const detail = await projectTypeApi.getDetail(projectUuid, type.id);
+      const detailData = detail.data;
+      setFloorplanFileId(detailData.floorplan_file_id ?? null);
+      setFloorplanPreview(detailData.floorplan_file_url ?? null);
+    } catch {
+      setFloorplanFileId(type.floorplan_file_id ?? null);
+      setFloorplanPreview(null);
+    }
   };
 
   const handleDeleteClick = (id: number) => {
@@ -132,6 +160,26 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
     setTypeName('');
     setGiveItems([]);
     setNewGiveItem('');
+    setFloorplanFile(null);
+    setFloorplanFileId(null);
+    setFloorplanPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFloorplanFile(file);
+      // 미리보기 URL 생성
+      const previewUrl = URL.createObjectURL(file);
+      setFloorplanPreview(previewUrl);
+    }
+  };
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = () => {
@@ -216,9 +264,26 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
                 </TableCell>
                 <TableCell sx={labelCellSx}>평면도</TableCell>
                 <TableCell sx={valueCellSx}>
-                  <Button variant="outlined" size="small">
-                    파일선택
-                  </Button>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={handleFileSelect}
+                    />
+                    <Button variant="outlined" size="small" onClick={handleFileButtonClick}>
+                      파일선택
+                    </Button>
+                    {floorplanPreview && (
+                      <img
+                        src={floorplanPreview}
+                        alt="평면도 미리보기"
+                        style={{ maxWidth: 120, maxHeight: 120, objectFit: 'contain', cursor: 'pointer' }}
+                        onClick={() => setPreviewImage({ url: floorplanPreview, name: '평면도' })}
+                      />
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -292,11 +357,12 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
                 <TableRow key={type.id} hover>
                   <TableCell>{type.name}</TableCell>
                   <TableCell align="center">
-                    {type.floorplan_file ? (
+                    {type.floorplan_file_url ? (
                       <img
-                        src={type.floorplan_file.url}
+                        src={type.floorplan_file_url}
                         alt={type.name}
-                        style={{ maxWidth: 60, maxHeight: 60 }}
+                        style={{ maxWidth: 60, maxHeight: 60, cursor: 'pointer' }}
+                        onClick={() => setPreviewImage({ url: type.floorplan_file_url!, name: `${type.name} 평면도` })}
                       />
                     ) : (
                       '-'
@@ -368,6 +434,14 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 이미지 미리보기 모달 */}
+      <ImagePreviewModal
+        open={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        imageUrl={previewImage?.url ?? ''}
+        imageName={previewImage?.name}
+      />
     </Dialog>
   );
 }
