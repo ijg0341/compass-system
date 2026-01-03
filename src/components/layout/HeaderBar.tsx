@@ -1,34 +1,47 @@
+import { useState } from 'react';
 import {
   AppBar,
   Toolbar,
   Typography,
   Box,
   IconButton,
-  Badge,
-  Tooltip,
-  Switch,
-  FormControlLabel,
   Select,
   MenuItem,
   Divider,
+  Menu,
   type SelectChangeEvent,
 } from '@mui/material';
-import { Notifications, AccountCircle, Business, AdminPanelSettings } from '@mui/icons-material';
-import { useMenuStore } from '@/src/stores/menuStore';
+import { AccountCircle, Business, AdminPanelSettings, Logout } from '@mui/icons-material';
 import { useCurrentProject } from '@/src/hooks/useCurrentProject';
 import { useProjectUrlSync } from '@/src/hooks/useProjectUrlSync';
 import { useAuthStore } from '@/src/stores/authStore';
 import { ADMIN_MODE_PROJECT } from '@/src/stores/projectStore';
 
 export default function HeaderBar() {
-  const { isCompact, setIsCompact } = useMenuStore();
   const { projects, projectUuid, projectName, isAdminMode } = useCurrentProject();
   const { switchProject } = useProjectUrlSync();
-  const { canAccessAdminMode, user } = useAuthStore();
+  const { canAccessAdminMode, user, logout } = useAuthStore();
+
+  // 프로필 메뉴 상태
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const profileMenuOpen = Boolean(anchorEl);
 
   const handleProjectChange = (event: SelectChangeEvent<string>) => {
     // switchProject가 스토어 업데이트 + 네비게이션을 모두 처리
     switchProject(event.target.value);
+  };
+
+  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    handleProfileClose();
+    await logout();
   };
 
   const showAdminOption = canAccessAdminMode();
@@ -127,42 +140,36 @@ export default function HeaderBar() {
 
         {/* 우측 컨트롤 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* 메뉴 축소 스위치 */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isCompact}
-                onChange={(e) => setIsCompact(e.target.checked)}
-                size="small"
-              />
-            }
-            label={
-              <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
-                메뉴 축소
-              </Typography>
-            }
-            sx={{ mr: 1 }}
-          />
-
-          {/* 알림 */}
-          <Tooltip title="알림">
-            <IconButton color="inherit" size="small">
-              <Badge badgeContent={3} color="error">
-                <Notifications fontSize="small" />
-              </Badge>
-            </IconButton>
-          </Tooltip>
-
           {/* 사용자 정보 */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, gap: 1 }}>
             <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
               {user?.name || '사용자'}님
             </Typography>
-            <IconButton color="inherit" size="small">
+            <IconButton color="inherit" size="small" onClick={handleProfileClick}>
               <AccountCircle fontSize="small" />
             </IconButton>
           </Box>
         </Box>
+
+        {/* 프로필 드롭다운 메뉴 */}
+        <Menu
+          anchorEl={anchorEl}
+          open={profileMenuOpen}
+          onClose={handleProfileClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          <MenuItem onClick={handleLogout}>
+            <Logout fontSize="small" sx={{ mr: 1 }} />
+            로그아웃
+          </MenuItem>
+        </Menu>
       </Toolbar>
     </AppBar>
   );
