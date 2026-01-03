@@ -72,7 +72,7 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
 
       const data: ProjectTypeCreateRequest = {
         name: typeName.trim(),
-        give_items: giveItems,
+        give_items: giveItems.length > 0 ? giveItems : null,
       };
 
       if (editMode && editId) {
@@ -105,7 +105,14 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
     setEditMode(true);
     setEditId(type.id);
     setTypeName(type.name);
-    setGiveItems(type.give_items || []);
+    // give_items가 문자열, 배열, 또는 빈 객체일 수 있으므로 배열로 변환
+    let items: string[] = [];
+    if (Array.isArray(type.give_items)) {
+      items = type.give_items;
+    } else if (typeof type.give_items === 'string' && type.give_items) {
+      items = type.give_items.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    setGiveItems(items);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -296,7 +303,11 @@ export default function ProjectTypeModal({ open, onClose, projectUuid }: Project
                     )}
                   </TableCell>
                   <TableCell>
-                    {type.give_items?.join(', ') || '-'}
+                    {Array.isArray(type.give_items) && type.give_items.length > 0
+                      ? type.give_items.join(', ')
+                      : typeof type.give_items === 'string' && type.give_items
+                        ? type.give_items
+                        : '-'}
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
